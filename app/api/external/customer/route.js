@@ -365,16 +365,50 @@ export async function POST(request) {
         let updatedCustomer = null;
         const hasCustomerInfo = customerName || signBoard || phone || email;
         if (hasCustomerInfo) {
-            const customerUpdate = {};
-            if (customerName) customerUpdate.name = customerName;
-            if (signBoard) customerUpdate.signBoard = signBoard;
-            if (phone) customerUpdate.phone = phone;
-            if (email) customerUpdate.email = email;
-
-            updatedCustomer = await prisma.customer.update({
-                where: { id: service.customerID },
-                data: customerUpdate
+            // Fetch current customer to check if it's the shared "Trial Customer"
+            const currentCustomer = await prisma.customer.findUnique({
+                where: { id: service.customerID }
             });
+
+            if (currentCustomer && currentCustomer.name === 'Trial Customer') {
+                // Customer is shared "Trial Customer" - create a dedicated customer
+                const generatePassword = () => {
+                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+                    let password = '';
+                    for (let i = 0; i < 12; i++) {
+                        password += chars.charAt(Math.floor(Math.random() * chars.length));
+                    }
+                    return password;
+                };
+
+                updatedCustomer = await prisma.customer.create({
+                    data: {
+                        name: customerName || 'Trial Customer',
+                        signBoard: signBoard || null,
+                        phone: phone || null,
+                        email: email || null,
+                        password: generatePassword()
+                    }
+                });
+
+                // Reassign this service to the new customer
+                await prisma.service.update({
+                    where: { id: service.id },
+                    data: { customerID: updatedCustomer.id }
+                });
+            } else {
+                // Customer is not shared - safe to update directly
+                const customerUpdate = {};
+                if (customerName) customerUpdate.name = customerName;
+                if (signBoard) customerUpdate.signBoard = signBoard;
+                if (phone) customerUpdate.phone = phone;
+                if (email) customerUpdate.email = email;
+
+                updatedCustomer = await prisma.customer.update({
+                    where: { id: service.customerID },
+                    data: customerUpdate
+                });
+            }
         }
 
         // Now check service status
