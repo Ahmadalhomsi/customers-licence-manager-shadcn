@@ -2,7 +2,7 @@
 FROM node:20.14.0-alpine AS base
 
 # Install pnpm globally
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9
 
 # Install dependencies only when needed
 FROM base AS deps
