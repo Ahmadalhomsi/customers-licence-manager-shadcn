@@ -75,7 +75,7 @@ export function CustomerModal({ visible, onClose, onSubmit, selectedCustomer, cu
     email: "",
     phone: "",
     password: "",
-    tableName: "",
+    signBoard: "",
   });
   const [passwordValidation, setPasswordValidation] = useState({
     minLength: false,
@@ -97,9 +97,9 @@ export function CustomerModal({ visible, onClose, onSubmit, selectedCustomer, cu
               email: selectedCustomer.email || "",
               phone: selectedCustomer.phone || "",
               password: selectedCustomer.password || "",
-              tableName: selectedCustomer.tableName || ""
+              signBoard: selectedCustomer.signBoard || ""
             }
-          : { name: "", email: "", phone: "", password: "", tableName: "" }
+          : { name: "", email: "", phone: "", password: "", signBoard: "" }
       );
       setPasswordValidation({
         minLength: false,
@@ -212,7 +212,7 @@ export function CustomerModal({ visible, onClose, onSubmit, selectedCustomer, cu
         email: (finalFormData.email || "").trim() || null, // Keep null for empty email
         phone: (finalFormData.phone || "").trim() || null, // Keep null for empty phone
         password: (finalFormData.password || "").trim(),
-        tableName: (finalFormData.tableName || "").trim() || null // Keep null for empty tableName
+        signBoard: (finalFormData.signBoard || "").trim() || null // Keep null for empty signBoard
       };
       
       onSubmit(cleanedData);
@@ -263,9 +263,9 @@ export function CustomerModal({ visible, onClose, onSubmit, selectedCustomer, cu
 
         <FormField
           label="Tabela Adı"
-          id="tableName"
-          name="tableName"
-          value={formData.tableName}
+          id="signBoard"
+          name="signBoard"
+          value={formData.signBoard}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           optional

@@ -90,7 +90,7 @@ export function LogDetailModal({ log, onEditService }) {
               <div><strong>Müşteri:</strong> {log.customer ? (
                 <span>
                   {log.customer.name}
-                  {log.customer.tableName && ` (${log.customer.tableName})`}
+                  {log.customer.signBoard && ` (${log.customer.signBoard})`}
                 </span>
               ) : 'N/A'}</div>
               <div><strong>Terminal:</strong> {(() => {

@@ -15,7 +15,7 @@ export async function POST(req) {
         }
 
         // Extract request body
-        const { name, tableName, email, phone, password } = await req.json();
+        const { name, signBoard, email, phone, password } = await req.json();
 
         // Generate a secure password if none provided
         const finalPassword = password || generateSecurePassword(12, {
@@ -28,7 +28,7 @@ export async function POST(req) {
 
         // Create the customer
         const customer = await prisma.customer.create({
-            data: { name, tableName, email, phone, password: finalPassword },
+            data: { name, signBoard, email, phone, password: finalPassword },
         });
 
         // Return customer data with the generated password (for display purposes)
@@ -91,7 +91,7 @@ export async function GET(req) {
                     { name: { contains: search, mode: 'insensitive' } },
                     { email: { contains: search, mode: 'insensitive' } },
                     { phone: { contains: search, mode: 'insensitive' } },
-                    { tableName: { contains: search, mode: 'insensitive' } }
+                    { signBoard: { contains: search, mode: 'insensitive' } }
                 ];
             } else {
                 // Regular text search including partial ID search
@@ -100,7 +100,7 @@ export async function GET(req) {
                     { name: { contains: search, mode: 'insensitive' } },
                     { email: { contains: search, mode: 'insensitive' } },
                     { phone: { contains: search, mode: 'insensitive' } },
-                    { tableName: { contains: search, mode: 'insensitive' } }
+                    { signBoard: { contains: search, mode: 'insensitive' } }
                 ];
             }
         }

@@ -93,10 +93,10 @@ export function CustomerTable({
       let aValue = a[sortConfig.key];
       let bValue = b[sortConfig.key];
 
-      // Handle null or undefined tableName values for sorting
-      if (sortConfig.key === 'tableName') {
-        aValue = a.tableName || '';
-        bValue = b.tableName || '';
+      // Handle null or undefined signBoard values for sorting
+      if (sortConfig.key === 'signBoard') {
+        aValue = a.signBoard || '';
+        bValue = b.signBoard || '';
       }
 
       if (sortConfig.key === 'status') {
@@ -266,11 +266,11 @@ export function CustomerTable({
               </TableHead>
               <TableHead
                 className="cursor-pointer hover:bg-muted/50"
-                onClick={() => handleSort('tableName')}
+                onClick={() => handleSort('signBoard')}
               >
                 <div className="flex items-center gap-1">
                   Tabela Adı
-                  <SortIcon column="tableName" />
+                  <SortIcon column="signBoard" />
                 </div>
               </TableHead>
               <TableHead
@@ -340,7 +340,7 @@ export function CustomerTable({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-foreground/80">{customer.tableName || '-'}</TableCell>
+                  <TableCell className="text-foreground/80">{customer.signBoard || '-'}</TableCell>
                   <TableCell>
                     <Badge
                       variant="outline"

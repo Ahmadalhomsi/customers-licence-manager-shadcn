@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
         where: {
           OR: [
             { name: { contains: search, mode: 'insensitive' } },
-            { tableName: { contains: search, mode: 'insensitive' } }
+            { signBoard: { contains: search, mode: 'insensitive' } }
           ]
         },
         select: { id: true }
@@ -172,7 +172,7 @@ export async function GET(request: NextRequest) {
     // For customer name, find matching customers first
     if (customerName) {
       // Use Turkish character support for customer search
-      const customerSearchConditions = createTurkishSearchConditions(customerName, ['name', 'tableName']);
+      const customerSearchConditions = createTurkishSearchConditions(customerName, ['name', 'signBoard']);
       
       const matchingCustomers = await prisma.customer.findMany({
         where: {
@@ -289,7 +289,7 @@ export async function GET(request: NextRequest) {
                   select: {
                     id: true,
                     name: true,
-                    tableName: true,
+                    signBoard: true,
                     email: true
                   }
                 }
