@@ -154,22 +154,52 @@ async function createTrialService(deviceToken, serviceName, companyName, termina
         }
     }
 
-    // Find or create a trial customer
-    let trialCustomer = await prisma.customer.findFirst({
-        where: {
-            name: 'Trial Customer'
-        }
-    });
+    // Determine which customer to link the trial service to
+    const hasCustomerInfo = customerInfo && (customerInfo.customerName || customerInfo.signBoard || customerInfo.phone || customerInfo.email);
+    
+    let trialCustomer;
+    let updatedCustomer = null;
 
-    if (!trialCustomer) {
+    if (hasCustomerInfo) {
+        // Customer info provided - create a dedicated customer for this trial
+        // This prevents shared "Trial Customer" record from being overwritten
+        const generatePassword = () => {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+            let password = '';
+            for (let i = 0; i < 12; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return password;
+        };
+
         trialCustomer = await prisma.customer.create({
             data: {
-                name: 'Trial Customer',
-                email: 'trial@example.com',
-                phone: '000-000-0000',
-                password: 'trial123456'
+                name: customerInfo.customerName || 'Trial Customer',
+                signBoard: customerInfo.signBoard || null,
+                phone: customerInfo.phone || null,
+                email: customerInfo.email || null,
+                password: generatePassword()
             }
         });
+        updatedCustomer = trialCustomer;
+    } else {
+        // No customer info - use shared Trial Customer (legacy behavior)
+        trialCustomer = await prisma.customer.findFirst({
+            where: {
+                name: 'Trial Customer'
+            }
+        });
+
+        if (!trialCustomer) {
+            trialCustomer = await prisma.customer.create({
+                data: {
+                    name: 'Trial Customer',
+                    email: 'trial@example.com',
+                    phone: '000-000-0000',
+                    password: 'trial123456'
+                }
+            });
+        }
     }
 
     // Calculate dates for 15-day trial
@@ -196,21 +226,6 @@ async function createTrialService(deviceToken, serviceName, companyName, termina
             customerID: trialCustomer.id
         }
     });
-
-    // If customer info provided, update the trial customer
-    let updatedCustomer = null;
-    if (customerInfo && (customerInfo.customerName || customerInfo.signBoard || customerInfo.phone || customerInfo.email)) {
-        const customerUpdate = {};
-        if (customerInfo.customerName) customerUpdate.name = customerInfo.customerName;
-        if (customerInfo.signBoard) customerUpdate.signBoard = customerInfo.signBoard;
-        if (customerInfo.phone) customerUpdate.phone = customerInfo.phone;
-        if (customerInfo.email) customerUpdate.email = customerInfo.email;
-
-        updatedCustomer = await prisma.customer.update({
-            where: { id: trialCustomer.id },
-            data: customerUpdate
-        });
-    }
 
     const { body, response } = createStandardResponse(
         true, 
