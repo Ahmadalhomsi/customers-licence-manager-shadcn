@@ -29,7 +29,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN mkdir -p app/generated && chmod -R 777 app/generated
 
 # Generate Prisma Client before building
-RUN pnpm prisma generate
+RUN npx prisma generate
 
 # Build the application
 RUN pnpm build
@@ -68,4 +68,4 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Start the Next.js application with migrations
-CMD sh -c "pnpm prisma migrate deploy && node server.js"
+CMD sh -c "npx prisma migrate deploy && node server.js"
