@@ -13,6 +13,8 @@ import { BulkConvertModal } from '@/components/servicesPage/BulkConvertModal'
 import { DeleteConfirmModal } from '@/components/mainPage/DeleteConfirmModal'
 import { Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from 'lucide-react'
 import { RenewHistoryModal } from '@/components/RenewHistoryModal'
+import { DeviceTokenConflictModal } from '@/components/servicesPage/DeviceTokenConflictModal'
+import { AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -35,6 +37,7 @@ export default function ServicesPage() {
   const [selectedCustomerForBulk, setSelectedCustomerForBulk] = useState(null);
   const [selectedServiceForBulk, setSelectedServiceForBulk] = useState(null);
   const [selectedServicesForConvert, setSelectedServicesForConvert] = useState([]);
+  const [deviceTokenConflictModalVisible, setDeviceTokenConflictModalVisible] = useState(false);
 
   // Pagination states
   const [pagination, setPagination] = useState({
@@ -564,6 +567,12 @@ export default function ServicesPage() {
           <Button variant="outline" asChild>
             <Link href="/services/archive">Arşiv</Link>
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => setDeviceTokenConflictModalVisible(true)}
+          >
+            <AlertTriangle className="mr-2 h-4 w-4 text-yellow-500" /> Token Çakışma Tara
+          </Button>
           {permissions?.canEditServices && (
             <>
               <Button onClick={() => {
@@ -737,6 +746,11 @@ export default function ServicesPage() {
         onConfirm={handleDelete}
         itemName={selectedService?.name}
         itemType="service"
+      />
+
+      <DeviceTokenConflictModal
+        visible={deviceTokenConflictModalVisible}
+        onClose={() => setDeviceTokenConflictModalVisible(false)}
       />
 
       <RenewHistoryModal
