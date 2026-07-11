@@ -74,6 +74,7 @@ model Service {
   endingDate   DateTime @default(dbgenerated("(CURRENT_TIMESTAMP + INTERVAL '1 year')"))
   // paid         Boolean  @default(false)
   deviceToken String?
+  deviceTokenV2 String? // New v2 device token for migration
   terminal    String? // Device name
   lastLoginDate DateTime? // Son giriş tarihi - null if never logged in
   version     String? // Application version - updated on each validation
@@ -103,6 +104,7 @@ model Service {
   @@index([archived])
   @@index([archivedAt])
   // Composite indexes for common query patterns
+  @@index([deviceTokenV2])
   @@index([customerID, active])
   @@index([category, active])
   @@index([startingDate, endingDate])

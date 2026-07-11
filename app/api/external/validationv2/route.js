@@ -39,7 +39,7 @@ function createStandardResponse(success, valid = null, message, data = null, err
 /**
  * Creates a trial service for external applications
  */
-async function createTrialService(deviceToken, serviceName, companyName, terminal, version, logData = null) {
+async function createTrialService(deviceToken, deviceTokenV2, serviceName, companyName, terminal, version, logData = null) {
     // Validate required fields
     if (!deviceToken || !serviceName) {
         const { body, response } = createStandardResponse(
@@ -186,7 +186,7 @@ async function createTrialService(deviceToken, serviceName, companyName, termina
     const endingDate = new Date();
     endingDate.setDate(startingDate.getDate() + 15); // Add 15 days
 
-    // Create the trial service
+    // Create the trial service - yeni kayitlarda yalnizca v2 kullan
     const service = await prisma.service.create({
         data: {
             name: serviceName,
@@ -199,7 +199,8 @@ async function createTrialService(deviceToken, serviceName, companyName, termina
             active: true,
             startingDate: startingDate,
             endingDate: endingDate,
-            deviceToken: deviceToken,
+            deviceToken: deviceToken || null,
+            deviceTokenV2: deviceTokenV2 || deviceToken || null,
             terminal: terminal || null,
             version: version || null,
             customerID: trialCustomer.id
@@ -237,10 +238,10 @@ async function createTrialService(deviceToken, serviceName, companyName, termina
 
 export async function POST(request) {
     const data = await request.json();
-    const { deviceToken, serviceName, companyName, terminal, version } = data;
+    const { deviceToken, deviceTokenV2, serviceName, companyName, terminal, version } = data;
 
-    // Validate that deviceToken is provided
-    if (!deviceToken) {
+    // Validate that at least one token is provided
+    if (!deviceToken && !deviceTokenV2) {
         const { body, response } = createStandardResponse(
             false, 
             false, 
@@ -270,15 +271,34 @@ export async function POST(request) {
     };
 
     try {
-        // Look for existing service with this device token
-        const service = await prisma.service.findFirst({
-            where: { deviceToken: deviceToken },
-        });
+        // 1. Önce v2 ile ara (sadece request'te deviceTokenV2 varsa)
+        let service = null;
+        if (deviceTokenV2) {
+            service = await prisma.service.findFirst({
+                where: { deviceTokenV2: deviceTokenV2 },
+            });
+        }
 
+        // 2. Bulamazsan v1 ile ara (mevcut lisanslar buradan çalışır)
+        if (!service && deviceToken) {
+            service = await prisma.service.findFirst({
+                where: { deviceToken: deviceToken },
+            });
+
+            // 3. v1 eşleşti ve v2 henüz kayıtlı değilse → otomatik migrate
+            if (service && !service.deviceTokenV2 && deviceTokenV2) {
+                await prisma.service.update({
+                    where: { id: service.id },
+                    data: { deviceTokenV2: deviceTokenV2 }
+                });
+                service.deviceTokenV2 = deviceTokenV2;
+            }
+        }
+
+        // 4. Yeni kayıtlarda yalnızca v2 kullan
         if (!service) {
-            // No service found with this device token, create a trial service
             logData.validationType = 'Trial';
-            return await createTrialService(deviceToken, serviceName, companyName, terminal, version, logData);
+            return await createTrialService(deviceToken, deviceTokenV2, serviceName, companyName, terminal, version, logData);
         }
 
         // Service found, perform system login validation (Sisteme Giriş)
@@ -351,6 +371,14 @@ export async function POST(request) {
         // Always update lastLoginDate on successful validation
         updateData.lastLoginDate = new Date();
         needsUpdate = true;
+
+        // Auto-migrate: if POS sent deviceTokenV2 and service doesn't have it yet, set it
+        if (deviceTokenV2 && !service.deviceTokenV2) {
+            updateData.deviceTokenV2 = deviceTokenV2;
+            needsUpdate = true;
+        }
+        // Also sync back: if service has deviceTokenV2 but POS didn't send it, send it in response
+        // (no write needed, the response includes it)
         
         // Update version if provided
         if (version && service.version !== version) {
@@ -393,6 +421,7 @@ export async function POST(request) {
                     name: serviceName || service.name,
                     companyName: companyName || service.companyName,
                     deviceToken: service.deviceToken,
+                    deviceTokenV2: service.deviceTokenV2,
                     startingDate: service.startingDate,
                     endingDate: service.endingDate,
                     daysRemaining: daysRemaining
