@@ -1,7 +1,7 @@
 import { verifyJWT } from '@/lib/jwt';
 import prisma from '@/lib/prisma';
 import { NextResponse } from 'next/server';
-import { createTurkishSearchConditions, createTurkishNestedSearchConditions } from '@/lib/turkish-utils';
+import { findIdsByTurkishSearch } from '@/lib/turkish-search';
 
 const UNLIMITED_END_DATE = new Date('9999-12-31T00:00:00.000Z');
 
@@ -139,36 +139,23 @@ export async function GET(req) {
         const andConditions = [];
         
         // Add search conditions
-        if (search) {
-            // Check if search term looks like an ID (starts with 'c' for cuid)
-            const isIdSearch = search.match(/^c[a-z0-9]+$/i);
-            
-            if (isIdSearch) {
-                // If it looks like an ID, search by exact ID match first, then fallback to text search
-                const textSearchConditions = createTurkishSearchConditions(search, ['name', 'description', 'companyName', 'category']);
-                const customerSearchConditions = includeCustomer ? createTurkishNestedSearchConditions(search, 'customer.name') : [];
-                
-                whereClause.OR = [
-                    { id: { equals: search } },
-                    ...textSearchConditions,
-                    ...(includeCustomer ? [
-                        { customer: { id: { equals: search } } },
-                        ...customerSearchConditions
-                    ] : [])
-                ];
-            } else {
-                // Regular text search with Turkish character support
-                const textSearchConditions = createTurkishSearchConditions(search, ['id', 'name', 'description', 'companyName', 'category']);
-                const customerSearchConditions = includeCustomer ? createTurkishNestedSearchConditions(search, 'customer.name') : [];
-                
-                whereClause.OR = [
-                    ...textSearchConditions,
-                    ...(includeCustomer ? [
-                        { customer: { id: { contains: search, mode: 'insensitive' } } },
-                        ...customerSearchConditions
-                    ] : [])
-                ];
-            }
+        if (search.trim()) {
+            // Case- and Turkish-character-insensitive text search
+            const matchingServiceIds = await findIdsByTurkishSearch(
+                'Service', ['name', 'description', 'companyName', 'category'], search
+            );
+            const matchingCustomerIds = includeCustomer
+                ? await findIdsByTurkishSearch('Customer', ['name', 'signBoard'], search)
+                : [];
+
+            whereClause.OR = [
+                { id: { contains: search.trim() } },
+                { id: { in: matchingServiceIds } },
+                ...(includeCustomer ? [
+                    { customerID: { contains: search.trim() } },
+                    { customerID: { in: matchingCustomerIds } }
+                ] : [])
+            ];
         }
 
         // Add category filtering
