@@ -30,6 +30,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Check, ChevronsUpDown, Plus, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { turkishIncludes } from "@/lib/turkish-utils";
 import { format } from "date-fns";
 import { tr } from 'date-fns/locale';
 import axios from 'axios';
@@ -482,7 +483,7 @@ export function ServiceModal2({
                                             <CommandGroup>
                                                 {customers
                                                     .filter((customer) =>
-                                                        customer.name.toLocaleLowerCase('tr-TR').includes(searchQuery.toLocaleLowerCase('tr-TR'))
+                                                        turkishIncludes(customer.name, searchQuery) || turkishIncludes(customer.signBoard, searchQuery)
                                                     )
                                                     .map((customer) => (
                                                         <CommandItem

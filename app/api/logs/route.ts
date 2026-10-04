@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { createTurkishSearchConditions } from '@/lib/turkish-utils';
+import { findIdsByTurkishSearch } from '@/lib/turkish-search';
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,20 +31,12 @@ export async function GET(request: NextRequest) {
     // Handle general search (when no specific fields are provided)
     if (search && !ipAddress && !serviceName && !companyName && !customerName && !endpoint && !terminal && !serviceId) {
       // First, find customer IDs that match the search term
-      const matchingCustomers = await prisma.customer.findMany({
-        where: {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { signBoard: { contains: search, mode: 'insensitive' } }
-          ]
-        },
-        select: { id: true }
-      });
+      const matchingCustomerIds = await findIdsByTurkishSearch('Customer', ['name', 'signBoard'], search);
 
       // Find services that belong to matching customers
       const matchingServices = await prisma.service.findMany({
         where: {
-          customerID: { in: matchingCustomers.map(c => c.id) }
+          customerID: { in: matchingCustomerIds }
         },
         select: { name: true }
       });
@@ -172,20 +164,13 @@ export async function GET(request: NextRequest) {
     // For customer name, find matching customers first
     if (customerName) {
       // Use Turkish character support for customer search
-      const customerSearchConditions = createTurkishSearchConditions(customerName, ['name', 'signBoard']);
-      
-      const matchingCustomers = await prisma.customer.findMany({
-        where: {
-          OR: customerSearchConditions
-        },
-        select: { id: true, name: true }
-      });
+      const matchingCustomerIds = await findIdsByTurkishSearch('Customer', ['name', 'signBoard'], customerName);
 
-      if (matchingCustomers.length > 0) {
+      if (matchingCustomerIds.length > 0) {
         // Get all services for these customers
         const matchingServices = await prisma.service.findMany({
           where: {
-            customerID: { in: matchingCustomers.map(c => c.id) }
+            customerID: { in: matchingCustomerIds }
           },
           select: { name: true, deviceToken: true }
         });

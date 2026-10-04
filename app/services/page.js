@@ -10,6 +10,7 @@ import { ServiceTable } from '@/components/servicesPage/ServicesTable'
 import { ServiceModal2 } from '@/components/servicesPage/ServiceModal2'
 import { BulkServiceModal } from '@/components/servicesPage/BulkServiceModal'
 import { BulkConvertModal } from '@/components/servicesPage/BulkConvertModal'
+import { BulkExtendModal } from '@/components/servicesPage/BulkExtendModal'
 import { DeleteConfirmModal } from '@/components/mainPage/DeleteConfirmModal'
 import { Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from 'lucide-react'
 import { RenewHistoryModal } from '@/components/RenewHistoryModal'
@@ -37,6 +38,8 @@ export default function ServicesPage() {
   const [selectedCustomerForBulk, setSelectedCustomerForBulk] = useState(null);
   const [selectedServiceForBulk, setSelectedServiceForBulk] = useState(null);
   const [selectedServicesForConvert, setSelectedServicesForConvert] = useState([]);
+  const [bulkExtendModalVisible, setBulkExtendModalVisible] = useState(false);
+  const [selectedServicesForExtend, setSelectedServicesForExtend] = useState([]);
   const [deviceTokenConflictModalVisible, setDeviceTokenConflictModalVisible] = useState(false);
 
   // Pagination states
@@ -317,6 +320,11 @@ export default function ServicesPage() {
   const handleBulkConvert = (selectedServices) => {
     setSelectedServicesForConvert(selectedServices);
     setBulkConvertModalVisible(true);
+  };
+
+  const handleBulkExtend = (selectedServices) => {
+    setSelectedServicesForExtend(selectedServices);
+    setBulkExtendModalVisible(true);
   };
 
   const handleBulkArchive = async (selectedServices) => {
@@ -632,6 +640,7 @@ export default function ServicesPage() {
           }}
           onOpenBulkService={handleOpenBulkServiceForCustomer}
           onBulkConvert={handleBulkConvert}
+          onBulkExtend={handleBulkExtend}
           onBulkArchive={handleBulkArchive}
           onBulkDelete={handleBulkDelete}
           archiveActionLabel="Arşive taşı"
@@ -737,6 +746,13 @@ export default function ServicesPage() {
         selectedServices={selectedServicesForConvert}
         customers={customers}
         onRefreshCustomers={fetchCustomers}
+        onSuccess={() => fetchServices(pagination.page, searchTerm, sortBy, sortOrder)}
+      />
+
+      <BulkExtendModal
+        visible={bulkExtendModalVisible}
+        onClose={() => setBulkExtendModalVisible(false)}
+        selectedServices={selectedServicesForExtend}
         onSuccess={() => fetchServices(pagination.page, searchTerm, sortBy, sortOrder)}
       />
 

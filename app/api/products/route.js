@@ -1,6 +1,7 @@
 import { verifyJWT } from '@/lib/jwt';
 import prisma from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import { findIdsByTurkishSearch } from '@/lib/turkish-search';
 
 export async function POST(req) {
     try {
@@ -140,45 +141,25 @@ export async function GET(req) {
         const whereClause = {};
         
         // Add search conditions
-        if (search) {
-            // Check if search term looks like an ID (starts with 'c' for cuid)
-            const isIdSearch = search.match(/^c[a-z0-9]+$/i);
-            
-            if (isIdSearch) {
-                // If it looks like an ID, search by exact ID match first, then fallback to text search
-                whereClause.OR = [
-                    { id: { equals: search } },
-                    { name: { contains: search, mode: 'insensitive' } },
-                    { description: { contains: search, mode: 'insensitive' } },
-                    { brand: { contains: search, mode: 'insensitive' } },
-                    { model: { contains: search, mode: 'insensitive' } },
-                    { serialNumber: { contains: search, mode: 'insensitive' } },
-                    { category: { contains: search, mode: 'insensitive' } },
-                    { supplier: { contains: search, mode: 'insensitive' } },
-                    { location: { contains: search, mode: 'insensitive' } },
-                    ...(includeCustomer ? [
-                        { customer: { id: { equals: search } } },
-                        { customer: { name: { contains: search, mode: 'insensitive' } } }
-                    ] : [])
-                ];
-            } else {
-                // Regular text search
-                whereClause.OR = [
-                    { id: { contains: search, mode: 'insensitive' } },
-                    { name: { contains: search, mode: 'insensitive' } },
-                    { description: { contains: search, mode: 'insensitive' } },
-                    { brand: { contains: search, mode: 'insensitive' } },
-                    { model: { contains: search, mode: 'insensitive' } },
-                    { serialNumber: { contains: search, mode: 'insensitive' } },
-                    { category: { contains: search, mode: 'insensitive' } },
-                    { supplier: { contains: search, mode: 'insensitive' } },
-                    { location: { contains: search, mode: 'insensitive' } },
-                    ...(includeCustomer ? [
-                        { customer: { id: { contains: search, mode: 'insensitive' } } },
-                        { customer: { name: { contains: search, mode: 'insensitive' } } }
-                    ] : [])
-                ];
-            }
+        if (search.trim()) {
+            // Case- and Turkish-character-insensitive text search
+            const matchingProductIds = await findIdsByTurkishSearch(
+                'PhysicalProduct',
+                ['name', 'description', 'brand', 'model', 'serialNumber', 'category', 'supplier', 'location'],
+                search
+            );
+            const matchingCustomerIds = includeCustomer
+                ? await findIdsByTurkishSearch('Customer', ['name', 'signBoard'], search)
+                : [];
+
+            whereClause.OR = [
+                { id: { contains: search.trim() } },
+                { id: { in: matchingProductIds } },
+                ...(includeCustomer ? [
+                    { customerID: { contains: search.trim() } },
+                    { customerID: { in: matchingCustomerIds } }
+                ] : [])
+            ];
         }
 
         // Add status filtering

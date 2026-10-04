@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from '@/components/ui/button'
-import { Edit, Trash2, Eye, ChevronDown, ChevronUp, Info, Key, Copy, X, Search, Plus, RefreshCw, Archive } from 'lucide-react'
+import { Edit, Trash2, Eye, ChevronDown, ChevronUp, Info, Key, Copy, X, Search, Plus, RefreshCw, Archive, CalendarPlus } from 'lucide-react'
 import { format } from "date-fns"
 import { useState } from 'react'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"
@@ -105,6 +105,7 @@ export function ServiceTable({
     onOpenBulkService,
     // Add bulk convert prop
     onBulkConvert,
+    onBulkExtend,
     onBulkArchive,
     onBulkDelete,
     archiveActionLabel = 'Arşive taşı'
@@ -206,6 +207,13 @@ export function ServiceTable({
         }
     };
 
+    const handleBulkExtendClick = () => {
+        if (onBulkExtend) {
+            const selected = services.filter((s) => selectedServiceIds.includes(s.id));
+            onBulkExtend(selected);
+        }
+    };
+
     const handleBulkArchiveClick = async () => {
         if (!onBulkArchive) {
             return;
@@ -243,6 +251,16 @@ export function ServiceTable({
                                 <RefreshCw className="mr-2 h-4 w-4" />
                                 Seçilenleri Dönüştür
                             </Button>
+                            {onBulkExtend && (
+                                <Button
+                                    size="sm"
+                                    onClick={handleBulkExtendClick}
+                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                    <CalendarPlus className="mr-2 h-4 w-4" />
+                                    Lisans Uzat
+                                </Button>
+                            )}
                             {onBulkArchive && (
                                 <Button
                                     size="sm"

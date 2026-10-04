@@ -29,6 +29,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Check, ChevronsUpDown, Plus, Copy, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { turkishIncludes } from "@/lib/turkish-utils";
 import { format } from "date-fns";
 import { tr } from 'date-fns/locale';
 import axios from 'axios';
@@ -326,7 +327,7 @@ export function BulkConvertModal({
                                             <CommandGroup>
                                                 {customers
                                                     .filter((customer) =>
-                                                        customer.name.toLocaleLowerCase('tr-TR').includes(searchQuery.toLocaleLowerCase('tr-TR'))
+                                                        turkishIncludes(customer.name, searchQuery) || turkishIncludes(customer.signBoard, searchQuery)
                                                     )
                                                     .map((customer) => (
                                                         <CommandItem
