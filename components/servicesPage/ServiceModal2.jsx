@@ -28,7 +28,7 @@ import {
     CommandItem,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Check, ChevronsUpDown, Plus, Copy } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Copy, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { turkishIncludes } from "@/lib/turkish-utils";
 import { format } from "date-fns";
@@ -70,6 +70,7 @@ const EXTENSION_PERIODS = [
     { value: "1month", label: "1 Ay Ekle" },
     { value: "6months", label: "6 Ay Ekle" },
     { value: "1year", label: "1 Yıl Ekle" },
+    { value: "custom", label: "Özel Tarih Seç" },
 ];
 
 const UNLIMITED_END_DATE = new Date('9999-12-31T00:00:00.000Z');
@@ -108,6 +109,8 @@ export function ServiceModal2({
     const [startDateMonth, setStartDateMonth] = useState(new Date());
     const [endDateMonth, setEndDateMonth] = useState(new Date());
     const [selectedDuration, setSelectedDuration] = useState("1year");
+    const [extensionPeriod, setExtensionPeriod] = useState("");
+    const [customRenewOpen, setCustomRenewOpen] = useState(false);
     
     // Customer creation states
     const [showCustomerForm, setShowCustomerForm] = useState(false);
@@ -124,6 +127,9 @@ export function ServiceModal2({
     const [selectedTemplateId, setSelectedTemplateId] = useState('none');
 
     useEffect(() => {
+        setExtensionPeriod("");
+        setCustomRenewOpen(false);
+
         if (visible && selectedService) {
             const paymentType = selectedService.paymentType;
             const isCustom = !DURATIONS.some(d => d.value === paymentType);
@@ -258,8 +264,35 @@ export function ServiceModal2({
         fetchCustomerLicenseTemplates();
     }, [visible, formData.customerID, selectedService?.id]);
 
+    // Renewals are calculated from the service's saved end date, so switching
+    // between options replaces the previous choice instead of stacking on it.
+    const originalEndingDate = selectedService?.endingDate ? new Date(selectedService.endingDate) : null;
+
+    const handleCustomRenewDate = (date) => {
+        if (!date) return;
+        setFormData((prev) => ({
+            ...prev,
+            endingDate: date,
+            renewalType: "custom"
+        }));
+        setEndDateMonth(date);
+        setCustomRenewOpen(false);
+    };
+
     const handleExtendService = (extensionPeriod) => {
-        const end = new Date(formData.endingDate);
+        setExtensionPeriod(extensionPeriod);
+
+        if (extensionPeriod === "custom") {
+            // Undo any preset extension until a custom date is actually picked
+            if (originalEndingDate) {
+                setFormData((prev) => ({ ...prev, endingDate: originalEndingDate, renewalType: undefined }));
+                setEndDateMonth(originalEndingDate);
+            }
+            setCustomRenewOpen(true);
+            return;
+        }
+
+        const end = new Date(originalEndingDate ?? formData.endingDate);
 
         switch (extensionPeriod) {
             case "1month":
@@ -804,20 +837,47 @@ export function ServiceModal2({
                             {selectedService && (
                                 <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
                                     <Label className="text-left sm:text-right">Süre Uzatma</Label>
-                                    <Select
-                                        onValueChange={handleExtendService}
-                                    >
-                                        <SelectTrigger className="w-full sm:col-span-3">
-                                            <SelectValue placeholder="Süre uzatmak için seçin" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {EXTENSION_PERIODS.map((period) => (
-                                                <SelectItem key={period.value} value={period.value}>
-                                                    {period.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="w-full sm:col-span-3 flex flex-col sm:flex-row gap-2">
+                                        <Select
+                                            value={extensionPeriod}
+                                            onValueChange={handleExtendService}
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Süre uzatmak için seçin" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {EXTENSION_PERIODS.map((period) => (
+                                                    <SelectItem key={period.value} value={period.value}>
+                                                        {period.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+
+                                        {extensionPeriod === "custom" && (
+                                            <Popover open={customRenewOpen} onOpenChange={setCustomRenewOpen}>
+                                                <PopoverTrigger asChild>
+                                                    <Button variant="outline" className="w-full sm:w-56 justify-start font-normal">
+                                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                                        {formData.renewalType === "custom"
+                                                            ? format(formData.endingDate, "dd MMMM yyyy", { locale: tr })
+                                                            : "Yeni bitiş tarihi seçin"}
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
+                                                    <Calendar
+                                                        mode="single"
+                                                        selected={formData.renewalType === "custom" ? formData.endingDate : undefined}
+                                                        onSelect={handleCustomRenewDate}
+                                                        defaultMonth={originalEndingDate ?? formData.endingDate}
+                                                        disabled={(date) => originalEndingDate && date <= originalEndingDate}
+                                                        locale={tr}
+                                                        initialFocus
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
+                                        )}
+                                    </div>
                                 </div>
                             )}
 

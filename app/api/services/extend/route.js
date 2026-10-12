@@ -13,9 +13,10 @@ const EXTEND_PERIODS = {
 };
 
 /**
- * Bulk-extends licences: moves each service's endingDate forward by the chosen period.
+ * Bulk-extends licences: moves each service's endingDate forward by the chosen period,
+ * or to a chosen date when period is 'custom' (body: { period: 'custom', endingDate }).
  * startingDate is never touched. A RenewHistory row is written for every extended service.
- * Unlimited services are skipped.
+ * Unlimited services, and services whose end date is already on/after the custom date, are skipped.
  */
 export async function POST(req) {
     try {
@@ -29,14 +30,20 @@ export async function POST(req) {
         const data = await req.json();
         const serviceIds = Array.isArray(data?.serviceIds) ? [...new Set(data.serviceIds.filter(Boolean))] : [];
         const period = data?.period || '1year';
+        const isCustom = period === 'custom';
         const months = EXTEND_PERIODS[period];
+        const customEndDate = isCustom ? new Date(data?.endingDate) : null;
 
         if (serviceIds.length === 0) {
             return NextResponse.json({ error: 'serviceIds alanı zorunludur' }, { status: 400 });
         }
 
-        if (!months) {
+        if (!isCustom && !months) {
             return NextResponse.json({ error: 'Geçersiz uzatma süresi' }, { status: 400 });
+        }
+
+        if (isCustom && (!data?.endingDate || Number.isNaN(customEndDate.getTime()))) {
+            return NextResponse.json({ error: 'Geçerli bir bitiş tarihi seçin' }, { status: 400 });
         }
 
         const services = await prisma.service.findMany({
@@ -44,12 +51,18 @@ export async function POST(req) {
             select: { id: true, name: true, endingDate: true, paymentType: true },
         });
 
-        const toExtend = services.filter((service) => service.paymentType !== 'unlimited');
-        const skippedUnlimited = services.length - toExtend.length;
+        const limited = services.filter((service) => service.paymentType !== 'unlimited');
+        const skippedUnlimited = services.length - limited.length;
+
+        // A custom date must move the end date forward; never shorten a licence here.
+        const toExtend = isCustom
+            ? limited.filter((service) => new Date(service.endingDate) < customEndDate)
+            : limited;
+        const skippedNotLater = limited.length - toExtend.length;
 
         const operations = toExtend.flatMap((service) => {
             const previousEndDate = new Date(service.endingDate);
-            const newEndDate = addMonths(previousEndDate, months);
+            const newEndDate = isCustom ? customEndDate : addMonths(previousEndDate, months);
 
             return [
                 prisma.service.update({
@@ -76,6 +89,7 @@ export async function POST(req) {
             message: `${toExtend.length} hizmet uzatıldı`,
             extendedCount: toExtend.length,
             skippedUnlimited,
+            skippedNotLater,
             notFound: serviceIds.length - services.length,
         }, { status: 200 });
     } catch (error) {
