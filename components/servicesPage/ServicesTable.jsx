@@ -238,7 +238,8 @@ export function ServiceTable({
     return (
         <TooltipProvider>
             <div className="space-y-4 relative">
-                <div className="flex gap-2 flex-wrap items-center">
+                {/* Toolbar stays pinned to the top of the scroll area (<main>) while the table scrolls */}
+                <div className="sticky top-0 z-30 -mx-4 px-4 py-2 bg-background border-b flex gap-2 flex-wrap items-center">
                     {/* Bulk Actions */}
                     {selectedServiceIds.length > 0 && (
                         <div className="flex items-center gap-2 mr-2 bg-muted/50 p-1 rounded-md">
