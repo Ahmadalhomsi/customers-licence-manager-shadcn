@@ -170,6 +170,13 @@ export function ServiceTable({
         return 'active'
     }
 
+    const getRemainingDays = (service) => {
+        const today = new Date()
+        const endDate = new Date(service.endingDate)
+        const diffMs = endDate.getTime() - today.getTime()
+        return Math.max(0, Math.ceil(diffMs / (24 * 60 * 60 * 1000)))
+    }
+
     const handleSort = (key) => {
         if (onSort) {
             onSort(key);
@@ -689,13 +696,20 @@ export function ServiceTable({
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge className={`${statusColors[status]} rounded-md px-2 py-1 text-xs font-medium`}>
-                                                {status === 'active' ? 'Aktif' : 
-                                                 status === 'upcoming' ? 'Yaklaşan' : 
-                                                 status === 'expired' ? 'Süresi Dolmuş' :
-                                                 status === 'inactive' ? 'Pasif' : 
-                                                 status === 'notStarted' ? 'Başlamadı' : status}
-                                            </Badge>
+                                            <div className="flex flex-col items-start gap-1">
+                                                <Badge className={`${statusColors[status]} rounded-md px-2 py-1 text-xs font-medium`}>
+                                                    {status === 'active' ? 'Aktif' : 
+                                                     status === 'upcoming' ? 'Yaklaşan' : 
+                                                     status === 'expired' ? 'Süresi Dolmuş' :
+                                                     status === 'inactive' ? 'Pasif' : 
+                                                     status === 'notStarted' ? 'Başlamadı' : status}
+                                                </Badge>
+                                                {status === 'upcoming' && (
+                                                    <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                                                        {getRemainingDays(service)} gün kaldı
+                                                    </span>
+                                                )}
+                                            </div>
                                         </TableCell>
                                         <TableCell>
                                             {service.lastLoginDate ? (
