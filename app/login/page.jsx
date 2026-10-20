@@ -72,7 +72,7 @@ export default function LoginPage() {
                 
                 // Check if we're on HTTPS to determine if we should use secure cookies
                 const isSecure = window.location.protocol === 'https:';
-                document.cookie = `token=${result.token}; path=/; max-age=86400; samesite=strict${isSecure ? '; secure' : ''}`;
+                document.cookie = `token=${result.token}; path=/; max-age=2592000; samesite=strict${isSecure ? '; secure' : ''}`;
                 
                 // Reset the auth manager's redirection flag
                 authManager.isRedirecting = false;

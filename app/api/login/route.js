@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 const MAX_ATTEMPTS = 5;
 const BLOCK_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"; // Ensure this is set in the environment variables
-const JWT_EXPIRATION = "1d"; // JWT expiration time
+const JWT_EXPIRATION = "30d"; // JWT expiration time
 
 export async function POST(req) {
   const { username, password } = await req.json();
