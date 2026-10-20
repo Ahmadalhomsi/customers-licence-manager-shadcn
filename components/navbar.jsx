@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { Menu, Home, Briefcase, Archive, LogOut, User, FileText, Package } from "lucide-react";
+import { Menu, Home, Briefcase, Archive, LogOut, User, FileText, Package, LayoutDashboard } from "lucide-react";
 import { BadgeNotification } from "@/components/BadgeNotification";
 import { authManager } from "@/lib/auth";
 import { simpleAuthenticatedGet } from "@/lib/simple-auth";
@@ -109,6 +109,13 @@ export function Navbar() {
           {permissions?.canViewServices && (
             <>
               <Link
+                href="/dashboard"
+                className={`flex items-center text-sm font-medium ${pathname === "/dashboard" ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+              >
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                Dashboard
+              </Link>
+              <Link
                 href="/services"
                 className={`flex items-center text-sm font-medium ${pathname === "/services" ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
               >
@@ -181,6 +188,15 @@ export function Navbar() {
                   Ana Sayfa
                 </Link>
               </DropdownMenuItem>
+
+              {permissions?.canViewServices && (
+                <DropdownMenuItem asChild className={pathname === "/dashboard" ? "text-primary" : ""}>
+                  <Link href="/dashboard">
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    Dashboard
+                  </Link>
+                </DropdownMenuItem>
+              )}
 
               {permissions?.canViewServices && (
                 <DropdownMenuItem asChild className={pathname === "/services" ? "text-primary" : ""}>
