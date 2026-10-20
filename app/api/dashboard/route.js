@@ -62,6 +62,58 @@ function countDistinctCustomers(entries) {
     return new Set(entries.map((entry) => entry.customer)).size;
 }
 
+// A licence with any device still pending counts as pending, not renewed
+function renewedLicences(month) {
+    return [...month.renewed].filter(([key]) => !month.pending.has(key)).map(([, entry]) => entry);
+}
+
+// One month's figures split by product line, using the same field names as the month totals
+function productBreakdown(month) {
+    const byProduct = new Map();
+    const productRow = (line) => {
+        if (!byProduct.has(line.key)) {
+            byProduct.set(line.key, {
+                key: line.key,
+                product: line.label,
+                grouped: line.grouped,
+                pending: 0,
+                renewed: 0,
+                renewals: 0,
+                newLicences: 0,
+                pendingDevices: 0,
+                renewalDevices: 0,
+                newDevices: 0,
+                pendingCustomers: new Set(),
+            });
+        }
+        return byProduct.get(line.key);
+    };
+
+    for (const entry of month.pending.values()) {
+        const row = productRow(entry.line);
+        row.pending++;
+        row.pendingDevices += entry.devices.size;
+        row.pendingCustomers.add(entry.customer);
+    }
+    for (const entry of renewedLicences(month)) productRow(entry.line).renewed++;
+    for (const entry of month.renewals.values()) {
+        const row = productRow(entry.line);
+        row.renewals++;
+        row.renewalDevices += entry.devices.size;
+    }
+    for (const entry of month.newLicences.values()) productRow(entry.line).newLicences++;
+    for (const item of month.newDevices) productRow(item.line).newDevices++;
+
+    return [...byProduct.values()]
+        .map((row) => ({ ...row, expected: row.pending + row.renewed, pendingCustomers: row.pendingCustomers.size }))
+        .sort((a, b) =>
+            b.expected - a.expected ||
+            b.renewals - a.renewals ||
+            b.newLicences - a.newLicences ||
+            a.product.localeCompare(b.product, 'tr')
+        );
+}
+
 /**
  * Monthly licence figures for the dashboard (?month=YYYY-MM, default: current Istanbul month).
  * Every figure is counted in licences (see lib/licence-products.js) with the matching device count next to it.
@@ -186,9 +238,6 @@ export async function GET(req) {
             if (done) addDevice(done.renewals, item);
         }
 
-        // A licence with any device still pending counts as pending, not renewed
-        const renewedLicences = (s) => [...s.renewed].filter(([key]) => !s.pending.has(key)).map(([, entry]) => entry);
-
         const trend = months.map((key) => {
             const s = stats.get(key);
             const pending = [...s.pending.values()];
@@ -207,56 +256,16 @@ export async function GET(req) {
                 newLicences: s.newLicences.size,
                 newDevices: s.newDevices.length,
                 newTrials: s.newTrials,
+                products: productBreakdown(s),
             };
         });
-
-        const selected = stats.get(selectedMonth);
-        const byProduct = new Map();
-        const productRow = (line) => {
-            if (!byProduct.has(line.key)) {
-                byProduct.set(line.key, {
-                    key: line.key,
-                    product: line.label,
-                    grouped: line.grouped,
-                    pending: 0,
-                    renewed: 0,
-                    renewals: 0,
-                    newLicences: 0,
-                    pendingDevices: 0,
-                    renewalDevices: 0,
-                    newDevices: 0,
-                });
-            }
-            return byProduct.get(line.key);
-        };
-        for (const entry of selected.pending.values()) {
-            const row = productRow(entry.line);
-            row.pending++;
-            row.pendingDevices += entry.devices.size;
-        }
-        for (const entry of renewedLicences(selected)) productRow(entry.line).renewed++;
-        for (const entry of selected.renewals.values()) {
-            const row = productRow(entry.line);
-            row.renewals++;
-            row.renewalDevices += entry.devices.size;
-        }
-        for (const entry of selected.newLicences.values()) productRow(entry.line).newLicences++;
-        for (const item of selected.newDevices) productRow(item.line).newDevices++;
-
-        const products = [...byProduct.values()]
-            .map((row) => ({ ...row, expected: row.pending + row.renewed }))
-            .sort((a, b) =>
-                b.expected - a.expected ||
-                b.renewals - a.renewals ||
-                b.newLicences - a.newLicences ||
-                a.product.localeCompare(b.product, 'tr')
-            );
+        const summary = trend.find((row) => row.month === selectedMonth);
 
         return NextResponse.json({
             month: selectedMonth,
             currentMonth: monthKey(new Date()),
-            summary: trend.find((row) => row.month === selectedMonth),
-            products,
+            summary,
+            products: summary.products,
             trend,
         }, { status: 200 });
     } catch (error) {

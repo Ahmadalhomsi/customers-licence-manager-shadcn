@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { Fragment, useState, useEffect, useId } from 'react'
 import axios from 'axios'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -20,7 +20,7 @@ import { formatMonth, formatNumber, formatPercent, shiftMonth } from '@/componen
 
 function Panel({ title, description, actions, children, className = '' }) {
   return (
-    <section className={`flex flex-col gap-4 rounded-xl border bg-card p-5 ${className}`}>
+    <section className={`flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-5 ${className}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h2 className="font-semibold leading-none">{title}</h2>
@@ -51,7 +51,21 @@ function ViewToggle({ view, onChange }) {
   )
 }
 
-function MonthTable({ rows, columns, selectedMonth }) {
+// Month rows expand into a per-product breakdown. Product rows (row.products from the API) use the same
+// field names as the month totals, so every column renders both; showProduct hides products with nothing to show.
+function MonthTable({ rows, columns, selectedMonth, showProduct }) {
+  const tableId = useId()
+  const [expanded, setExpanded] = useState(() => new Set())
+
+  const toggle = (month) => {
+    setExpanded((current) => {
+      const next = new Set(current)
+      if (next.has(month)) next.delete(month)
+      else next.add(month)
+      return next
+    })
+  }
+
   return (
     <Table>
       <TableHeader>
@@ -63,14 +77,62 @@ function MonthTable({ rows, columns, selectedMonth }) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.map((row) => (
-          <TableRow key={row.month} data-state={row.month === selectedMonth ? 'selected' : undefined}>
-            <TableCell className="font-medium">{formatMonth(row.month)}</TableCell>
-            {columns.map((column) => (
-              <TableCell key={column.label} className="text-right tabular-nums">{column.value(row)}</TableCell>
-            ))}
-          </TableRow>
-        ))}
+        {rows.map((row) => {
+          const isOpen = expanded.has(row.month)
+          const breakdownId = `${tableId}-${row.month}`
+          const products = row.products.filter(showProduct)
+
+          return (
+            <Fragment key={row.month}>
+              <TableRow
+                data-state={row.month === selectedMonth ? 'selected' : undefined}
+                className="cursor-pointer"
+                onClick={() => toggle(row.month)}
+              >
+                <TableCell className="font-medium">
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    aria-controls={isOpen ? breakdownId : undefined}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      toggle(row.month)
+                    }}
+                    className="-ml-1 inline-flex items-center gap-1.5 whitespace-nowrap rounded-sm px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <ChevronRight
+                      className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
+                      aria-hidden
+                    />
+                    {formatMonth(row.month)}
+                  </button>
+                </TableCell>
+                {columns.map((column) => (
+                  <TableCell key={column.label} className="text-right tabular-nums">{column.value(row)}</TableCell>
+                ))}
+              </TableRow>
+
+              {isOpen && (products.length === 0 ? (
+                <TableRow id={breakdownId} className="bg-muted/40 hover:bg-muted/40">
+                  <TableCell colSpan={columns.length + 1} className="py-2 pl-9 text-sm text-muted-foreground">
+                    Bu ayda ürün bazında kayıt yok
+                  </TableCell>
+                </TableRow>
+              ) : products.map((product, index) => (
+                <TableRow
+                  key={product.key}
+                  id={index === 0 ? breakdownId : undefined}
+                  className="bg-muted/40 text-[13px] hover:bg-muted/60"
+                >
+                  <TableCell className="py-2 pl-9">{product.product}</TableCell>
+                  {columns.map((column) => (
+                    <TableCell key={column.label} className="py-2 text-right tabular-nums">{column.value(product)}</TableCell>
+                  ))}
+                </TableRow>
+              )))}
+            </Fragment>
+          )
+        })}
       </TableBody>
     </Table>
   )
@@ -191,11 +253,13 @@ export default function DashboardPage() {
             isFuture={data.month > data.currentMonth}
           />
 
-          <div className="grid gap-6 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
             <Panel
               className="lg:col-span-3"
               title="Beklenen yenilemeler"
-              description="Bitiş tarihi o aya düşen lisanslar. Bir aya tıklayarak seçin."
+              description={renewalView === 'chart'
+                ? 'Bitiş tarihi o aya düşen lisanslar. Bir aya tıklayarak seçin.'
+                : 'Bitiş tarihi o aya düşen lisanslar. Ürün kırılımı için bir aya tıklayın.'}
               actions={<ViewToggle view={renewalView} onChange={setRenewalView} />}
             >
               {renewalView === 'chart' ? (
@@ -220,6 +284,7 @@ export default function DashboardPage() {
                     { label: 'Bekleyen müşteri', value: (row) => formatNumber(row.pendingCustomers) },
                     { label: 'Oran', value: (row) => formatPercent(row.renewed, row.expected) },
                   ]}
+                  showProduct={(product) => product.expected > 0}
                 />
               )}
             </Panel>
@@ -227,7 +292,9 @@ export default function DashboardPage() {
             <Panel
               className="lg:col-span-2"
               title="Yenileme ve yeni lisans"
-              description="Ay içinde yapılan işlemler"
+              description={activityView === 'chart'
+                ? 'Ay içinde yapılan işlemler'
+                : 'Ay içinde yapılan işlemler. Ürün kırılımı için bir aya tıklayın.'}
               actions={<ViewToggle view={activityView} onChange={setActivityView} />}
             >
               {pastRows.length === 0 ? (
@@ -248,8 +315,10 @@ export default function DashboardPage() {
                     { label: 'Yenilenen cihaz', value: (row) => formatNumber(row.renewalDevices) },
                     { label: 'Yeni lisans', value: (row) => formatNumber(row.newLicences) },
                     { label: 'Yeni cihaz', value: (row) => formatNumber(row.newDevices) },
-                    { label: 'Deneme', value: (row) => formatNumber(row.newTrials) },
+                    // Trials have no product of their own, so product rows show a dash
+                    { label: 'Deneme', value: (row) => row.newTrials === undefined ? '—' : formatNumber(row.newTrials) },
                   ]}
+                  showProduct={(product) => product.renewals + product.newLicences + product.newDevices > 0}
                 />
               )}
             </Panel>
