@@ -240,6 +240,7 @@ export function RenewalColumnChart({ rows, selectedMonth, currentMonth, onSelect
           rows={[
             { label: SERIES.renewed.label, value: formatNumber(activeRow.renewed), color: SERIES.renewed.color },
             { label: SERIES.pending.label, value: formatNumber(activeRow.pending), color: SERIES.pending.color },
+            { label: 'Bekleyen cihaz', value: formatNumber(activeRow.pendingDevices) },
             { label: 'Bekleyen müşteri', value: formatNumber(activeRow.pendingCustomers) },
           ]}
           footer={`${formatNumber(activeRow.expected)} lisansın ${formatPercent(activeRow.renewed, activeRow.expected)} kadarı yenilendi`}
@@ -363,7 +364,11 @@ export function ActivityLineChart({ rows, selectedMonth, currentMonth }) {
           x={x(active)}
           containerWidth={width}
           title={formatMonth(activeRow.month)}
-          rows={series.map((s) => ({ label: s.label, value: formatNumber(activeRow[s.key]), color: s.color }))}
+          rows={[
+            ...series.map((s) => ({ label: s.label, value: formatNumber(activeRow[s.key]), color: s.color })),
+            { label: 'Yenilenen cihaz', value: formatNumber(activeRow.renewalDevices) },
+            { label: 'Yeni cihaz', value: formatNumber(activeRow.newDevices) },
+          ]}
           footer={`Ayrıca ${formatNumber(activeRow.newTrials)} otomatik deneme lisansı açıldı (grafikte yok)`}
         />
       )}

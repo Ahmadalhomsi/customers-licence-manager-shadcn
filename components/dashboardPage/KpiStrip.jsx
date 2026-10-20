@@ -41,10 +41,11 @@ export function KpiStrip({ summary, previous, isPast, isFuture }) {
       aria-label="Ay özeti"
       className="grid overflow-hidden rounded-xl border bg-border gap-px sm:grid-cols-2 lg:grid-cols-4"
     >
-      <Metric label={isPast ? 'Yenilenmeyen lisans' : 'Yenileme bekleyen'} value={formatNumber(summary.pending)}>
+      <Metric label={isPast ? 'Yenilenmeyen lisans' : 'Yenileme bekleyen lisans'} value={formatNumber(summary.pending)}>
         <span className="text-muted-foreground">
-          {formatNumber(summary.pendingCustomers)} müşteri · {isPast ? 'süresi doldu, yenilenmedi' : 'bu ay süresi doluyor'}
+          {formatNumber(summary.pendingDevices)} cihaz · {formatNumber(summary.pendingCustomers)} müşteri
         </span>
+        <span className="text-muted-foreground">{isPast ? 'Süresi doldu, yenilenmedi' : 'Bu ay süresi doluyor'}</span>
       </Metric>
 
       <Metric label="Yenilenme oranı" value={formatPercent(summary.renewed, summary.expected)}>
@@ -60,14 +61,19 @@ export function KpiStrip({ summary, previous, isPast, isFuture }) {
           <div className="h-full rounded-full" style={{ width: `${renewedShare}%`, background: 'var(--viz-1)' }} />
         </div>
         <span className="text-muted-foreground">
-          {formatNumber(summary.expected)} lisanstan {formatNumber(summary.renewed)} tanesi yenilendi
+          Bu ay biten {formatNumber(summary.expected)} lisanstan {formatNumber(summary.renewed)} tanesi yenilendi
         </span>
       </Metric>
 
       <Metric label="Yapılan yenileme" value={isFuture ? '—' : formatNumber(summary.renewals)}>
-        {isFuture
-          ? <span className="text-muted-foreground">Bu ay henüz gelmedi</span>
-          : <Delta current={summary.renewals} previous={previous?.renewals} />}
+        {isFuture ? (
+          <span className="text-muted-foreground">Bu ay henüz gelmedi</span>
+        ) : (
+          <>
+            <Delta current={summary.renewals} previous={previous?.renewals} />
+            <span className="text-muted-foreground">{formatNumber(summary.renewalDevices)} cihaz yenilendi</span>
+          </>
+        )}
       </Metric>
 
       <Metric label="Yeni lisans" value={isFuture ? '—' : formatNumber(summary.newLicences)}>
@@ -76,7 +82,9 @@ export function KpiStrip({ summary, previous, isPast, isFuture }) {
         ) : (
           <>
             <Delta current={summary.newLicences} previous={previous?.newLicences} />
-            <span className="text-muted-foreground">Ayrıca {formatNumber(summary.newTrials)} otomatik deneme lisansı</span>
+            <span className="text-muted-foreground">
+              {formatNumber(summary.newDevices)} yeni cihaz · ayrıca {formatNumber(summary.newTrials)} otomatik deneme
+            </span>
           </>
         )}
       </Metric>

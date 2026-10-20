@@ -15,7 +15,7 @@ import {
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { ActivityLineChart, Legend, RenewalColumnChart, SERIES } from '@/components/dashboardPage/charts'
 import { KpiStrip } from '@/components/dashboardPage/KpiStrip'
-import { CategoryBreakdown } from '@/components/dashboardPage/CategoryBreakdown'
+import { ProductBreakdown } from '@/components/dashboardPage/ProductBreakdown'
 import { formatMonth, formatNumber, formatPercent, shiftMonth } from '@/components/dashboardPage/format'
 
 function Panel({ title, description, actions, children, className = '' }) {
@@ -216,6 +216,7 @@ export default function DashboardPage() {
                     { label: 'Beklenen', value: (row) => formatNumber(row.expected) },
                     { label: 'Yenilenen', value: (row) => formatNumber(row.renewed) },
                     { label: 'Bekleyen', value: (row) => formatNumber(row.pending) },
+                    { label: 'Bekleyen cihaz', value: (row) => formatNumber(row.pendingDevices) },
                     { label: 'Bekleyen müşteri', value: (row) => formatNumber(row.pendingCustomers) },
                     { label: 'Oran', value: (row) => formatPercent(row.renewed, row.expected) },
                   ]}
@@ -244,7 +245,9 @@ export default function DashboardPage() {
                   selectedMonth={data.month}
                   columns={[
                     { label: 'Yenileme', value: (row) => formatNumber(row.renewals) },
+                    { label: 'Yenilenen cihaz', value: (row) => formatNumber(row.renewalDevices) },
                     { label: 'Yeni lisans', value: (row) => formatNumber(row.newLicences) },
+                    { label: 'Yeni cihaz', value: (row) => formatNumber(row.newDevices) },
                     { label: 'Deneme', value: (row) => formatNumber(row.newTrials) },
                   ]}
                 />
@@ -257,11 +260,13 @@ export default function DashboardPage() {
             description="Her üründe bu ay biten lisanslar, yapılan yenilemeler ve yeni lisanslar"
             actions={<Legend items={[SERIES.renewed, SERIES.pending]} />}
           >
-            <CategoryBreakdown categories={data.categories} />
+            <ProductBreakdown products={data.products} />
           </Panel>
 
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Müşteriler telefon numarasına göre eşleştirilir. Deneme, sınırsız ve arşivlenmiş lisanslar beklenen yenilemelere dahil değildir.
+            Sayılar lisans bazındadır: Adisyon Programı ve online yemek platformları müşteri başına tek lisans sayılır,
+            diğer ürünlerde her cihaz ayrı bir lisanstır. Müşteriler telefon numarasına göre eşleştirilir.
+            Deneme, sınırsız ve arşivlenmiş lisanslar beklenen yenilemelere dahil değildir.
             Geçmiş aylarda &quot;bekleyen&quot;, süresi dolup yenilenmeyen lisans demektir.
           </p>
         </div>
