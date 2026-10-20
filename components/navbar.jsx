@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { Menu, Home, Briefcase, Archive, LogOut, User, FileText, Package, LayoutDashboard } from "lucide-react";
+import { Menu, Briefcase, Archive, LogOut, User, Users, FileText, Package, LayoutDashboard } from "lucide-react";
 import { BadgeNotification } from "@/components/BadgeNotification";
 import { authManager } from "@/lib/auth";
 import { simpleAuthenticatedGet } from "@/lib/simple-auth";
@@ -102,19 +102,22 @@ export function Navbar() {
             href="/"
             className={`flex items-center text-sm font-medium ${pathname === "/" ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
           >
-            <Home className="mr-2 h-4 w-4" />
-            Ana Sayfa
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            Dashboard
           </Link>
+
+          {permissions?.canViewCustomers && (
+            <Link
+              href="/customers"
+              className={`flex items-center text-sm font-medium ${pathname === "/customers" ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Müşteriler
+            </Link>
+          )}
 
           {permissions?.canViewServices && (
             <>
-              <Link
-                href="/dashboard"
-                className={`flex items-center text-sm font-medium ${pathname === "/dashboard" ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
-              >
-                <LayoutDashboard className="mr-2 h-4 w-4" />
-                Dashboard
-              </Link>
               <Link
                 href="/services"
                 className={`flex items-center text-sm font-medium ${pathname === "/services" ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
@@ -184,16 +187,16 @@ export function Navbar() {
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild className={pathname === "/" ? "text-primary" : ""}>
                 <Link href="/">
-                  <Home className="mr-2 h-4 w-4" />
-                  Ana Sayfa
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  Dashboard
                 </Link>
               </DropdownMenuItem>
 
-              {permissions?.canViewServices && (
-                <DropdownMenuItem asChild className={pathname === "/dashboard" ? "text-primary" : ""}>
-                  <Link href="/dashboard">
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    Dashboard
+              {permissions?.canViewCustomers && (
+                <DropdownMenuItem asChild className={pathname === "/customers" ? "text-primary" : ""}>
+                  <Link href="/customers">
+                    <Users className="mr-2 h-4 w-4" />
+                    Müşteriler
                   </Link>
                 </DropdownMenuItem>
               )}
