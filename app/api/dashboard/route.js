@@ -21,10 +21,11 @@ function monthStart(year, monthIndex) {
     return new Date(Date.UTC(year, monthIndex, 1) - ISTANBUL_OFFSET_MS);
 }
 
-// Same trial detection as the check-services cron
+// Trials are auto-created as 'custom' services with a "Trial service" description. Converting one
+// to a paid licence changes its paymentType but keeps the description, so it stops counting as a trial.
 function isTrial(service) {
     return service.customer?.name === 'Trial Customer' ||
-        Boolean(service.description?.startsWith('Trial service'));
+        (service.paymentType === 'custom' && Boolean(service.description?.startsWith('Trial service')));
 }
 
 // Customers are matched by phone number; those without a usable phone fall back to their id
@@ -91,7 +92,7 @@ export async function GET(req) {
                     previousEndDate: true,
                     createdAt: true,
                     service: {
-                        select: { category: true, description: true, customerID: true, customer: customerSelect },
+                        select: { category: true, description: true, paymentType: true, customerID: true, customer: customerSelect },
                     },
                 },
             }),

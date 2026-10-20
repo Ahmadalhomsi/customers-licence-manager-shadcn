@@ -76,7 +76,7 @@ export function KpiStrip({ summary, previous, isPast, isFuture }) {
         ) : (
           <>
             <Delta current={summary.newLicences} previous={previous?.newLicences} />
-            <span className="text-muted-foreground">Ayrıca {formatNumber(summary.newTrials)} deneme lisansı</span>
+            <span className="text-muted-foreground">Ayrıca {formatNumber(summary.newTrials)} otomatik deneme lisansı</span>
           </>
         )}
       </Metric>

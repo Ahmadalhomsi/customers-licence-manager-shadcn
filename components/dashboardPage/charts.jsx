@@ -363,10 +363,8 @@ export function ActivityLineChart({ rows, selectedMonth, currentMonth }) {
           x={x(active)}
           containerWidth={width}
           title={formatMonth(activeRow.month)}
-          rows={[
-            ...series.map((s) => ({ label: s.label, value: formatNumber(activeRow[s.key]), color: s.color })),
-            { label: 'Deneme lisansı', value: formatNumber(activeRow.newTrials) },
-          ]}
+          rows={series.map((s) => ({ label: s.label, value: formatNumber(activeRow[s.key]), color: s.color }))}
+          footer={`Ayrıca ${formatNumber(activeRow.newTrials)} otomatik deneme lisansı açıldı (grafikte yok)`}
         />
       )}
     </div>
