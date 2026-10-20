@@ -3,53 +3,101 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
   TableBody,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ChevronLeft, ChevronRight, Clock, RefreshCw, CheckCircle2, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ActivityLineChart, Legend, RenewalColumnChart, SERIES } from '@/components/dashboardPage/charts'
+import { KpiStrip } from '@/components/dashboardPage/KpiStrip'
+import { CategoryBreakdown } from '@/components/dashboardPage/CategoryBreakdown'
+import { formatMonth, formatNumber, formatPercent, shiftMonth } from '@/components/dashboardPage/format'
 
-const MONTH_NAMES = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
-
-function formatMonth(key) {
-  const [year, month] = key.split('-').map(Number)
-  return `${MONTH_NAMES[month - 1]} ${year}`
-}
-
-function shiftMonth(key, offset) {
-  const [year, month] = key.split('-').map(Number)
-  const date = new Date(Date.UTC(year, month - 1 + offset, 1))
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`
-}
-
-function StatCard({ title, value, description, icon: Icon }) {
+function Panel({ title, description, actions, children, className = '' }) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold tabular-nums">{value}</div>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
+    <section className={`flex flex-col gap-4 rounded-xl border bg-card p-5 ${className}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h2 className="font-semibold leading-none">{title}</h2>
+          {description && <p className="text-sm text-muted-foreground">{description}</p>}
+        </div>
+        {actions}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+function ViewToggle({ view, onChange }) {
+  return (
+    <div className="inline-flex rounded-md border p-0.5 text-xs" role="group" aria-label="Görünüm">
+      {[['chart', 'Grafik'], ['table', 'Tablo']].map(([value, label]) => (
+        <button
+          key={value}
+          type="button"
+          aria-pressed={view === value}
+          onClick={() => onChange(value)}
+          className={`rounded-[5px] px-2.5 py-1 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${view === value ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function MonthTable({ rows, columns, selectedMonth }) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Ay</TableHead>
+          {columns.map((column) => (
+            <TableHead key={column.label} className="text-right">{column.label}</TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((row) => (
+          <TableRow key={row.month} data-state={row.month === selectedMonth ? 'selected' : undefined}>
+            <TableCell className="font-medium">{formatMonth(row.month)}</TableCell>
+            {columns.map((column) => (
+              <TableCell key={column.label} className="text-right tabular-nums">{column.value(row)}</TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="flex flex-col gap-6" aria-busy="true" aria-label="Yükleniyor">
+      <Skeleton className="h-[132px] rounded-xl" />
+      <div className="grid gap-6 lg:grid-cols-5">
+        <Skeleton className="h-[372px] rounded-xl lg:col-span-3" />
+        <Skeleton className="h-[372px] rounded-xl lg:col-span-2" />
+      </div>
+      <Skeleton className="h-72 rounded-xl" />
+    </div>
   )
 }
 
 export default function DashboardPage() {
   // Empty string lets the API pick the current month
   const [requestedMonth, setRequestedMonth] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [renewalView, setRenewalView] = useState('chart')
+  const [activityView, setActivityView] = useState('chart')
 
   useEffect(() => {
     let cancelled = false
@@ -63,7 +111,7 @@ export default function DashboardPage() {
         if (!cancelled) setData(response.data)
       } catch (err) {
         console.error('Error fetching dashboard:', err)
-        if (!cancelled) setError(err.response?.data?.error || 'Dashboard verileri yüklenemedi')
+        if (!cancelled) setError(err.response?.data?.error || 'Veriler yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.')
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -73,185 +121,149 @@ export default function DashboardPage() {
     return () => {
       cancelled = true
     }
-  }, [requestedMonth])
+  }, [requestedMonth, reloadKey])
 
-  const summary = data?.summary
-  const renewedPercent = summary?.expected ? Math.round((summary.renewed / summary.expected) * 100) : 0
-  const categoryTotals = (data?.categories || []).reduce((totals, row) => ({
-    expected: totals.expected + row.expected,
-    pending: totals.pending + row.pending,
-    renewed: totals.renewed + row.renewed,
-    renewals: totals.renewals + row.renewals,
-    newLicences: totals.newLicences + row.newLicences,
-  }), { expected: 0, pending: 0, renewed: 0, renewals: 0, newLicences: 0 })
-
-  // Renewals and new licences cannot have happened yet in future months
-  const isFuture = (key) => data && key > data.currentMonth
+  const trend = data?.trend ?? []
+  const selectedIndex = trend.findIndex((row) => row.month === data?.month)
+  const pastRows = trend.filter((row) => row.month <= data?.currentMonth)
 
   return (
-    <div className="w-full min-h-full pt-6 pb-6 px-4 flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Genel Bakış</h1>
+          <p className="text-sm text-muted-foreground">Lisans yenilemeleri ve yeni lisanslar, aylık</p>
+        </div>
+
         <div className="flex items-center gap-2">
+          <div className="inline-flex h-9 items-center rounded-md border bg-card shadow-sm">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-full rounded-r-none"
+              disabled={!data}
+              onClick={() => setRequestedMonth(shiftMonth(data.month, -1))}
+              aria-label="Önceki ay"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="min-w-[8.5rem] px-2 text-center text-sm font-medium" aria-live="polite">
+              {data ? formatMonth(data.month) : '…'}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-full rounded-l-none"
+              disabled={!data}
+              onClick={() => setRequestedMonth(shiftMonth(data.month, 1))}
+              aria-label="Sonraki ay"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
           <Button
             variant="outline"
-            size="icon"
-            disabled={!data}
-            onClick={() => setRequestedMonth(shiftMonth(data.month, -1))}
-            aria-label="Önceki ay"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="min-w-32 text-center font-medium">{data ? formatMonth(data.month) : '…'}</span>
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={!data}
-            onClick={() => setRequestedMonth(shiftMonth(data.month, 1))}
-            aria-label="Sonraki ay"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
+            className="h-9"
             disabled={!data || data.month === data.currentMonth}
             onClick={() => setRequestedMonth(data.currentMonth)}
           >
-            Bu Ay
+            Bu ay
           </Button>
         </div>
-      </div>
+      </header>
 
       {error && (
-        <div className="rounded-md border border-destructive/50 p-4 text-sm text-destructive">{error}</div>
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/40 px-4 py-3 text-sm">
+          <span className="text-destructive">{error}</span>
+          <Button variant="outline" size="sm" onClick={() => setReloadKey((key) => key + 1)}>Tekrar dene</Button>
+        </div>
       )}
 
-      {loading && !data ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
-        </div>
-      ) : summary && (
-        <div className={`flex flex-col gap-6 transition-opacity ${loading ? 'opacity-60' : ''}`}>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              title="Yenileme Bekleyen"
-              value={summary.pending}
-              description={`${summary.pendingCustomers} müşteri · bu ay biten, henüz yenilenmemiş`}
-              icon={Clock}
-            />
-            <StatCard
-              title="Yenilenen"
-              value={`${summary.renewed} / ${summary.expected}`}
-              description={`Bu ay bitecek lisansların %${renewedPercent}'i yenilendi`}
-              icon={CheckCircle2}
-            />
-            <StatCard
-              title="Aylık Yenileme"
-              value={summary.renewals}
-              description="Bu ay yapılan yenileme işlemi"
-              icon={RefreshCw}
-            />
-            <StatCard
-              title="Yeni Lisans"
-              value={summary.newLicences}
-              description={`Bu ay açılan lisans · ayrıca ${summary.newTrials} deneme`}
-              icon={Sparkles}
-            />
+      {!data && loading && <DashboardSkeleton />}
+
+      {data && (
+        // Refetches keep the previous render at reduced opacity instead of flashing a skeleton
+        <div className={`flex flex-col gap-6 transition-opacity duration-200 ${loading ? 'opacity-60' : ''}`}>
+          <KpiStrip
+            summary={data.summary}
+            previous={trend[selectedIndex - 1]}
+            isPast={data.month < data.currentMonth}
+            isFuture={data.month > data.currentMonth}
+          />
+
+          <div className="grid gap-6 lg:grid-cols-5">
+            <Panel
+              className="lg:col-span-3"
+              title="Beklenen yenilemeler"
+              description="Bitiş tarihi o aya düşen lisanslar. Bir aya tıklayarak seçin."
+              actions={<ViewToggle view={renewalView} onChange={setRenewalView} />}
+            >
+              {renewalView === 'chart' ? (
+                <>
+                  <Legend items={[SERIES.renewed, SERIES.pending]} />
+                  <RenewalColumnChart
+                    rows={trend}
+                    selectedMonth={data.month}
+                    currentMonth={data.currentMonth}
+                    onSelect={setRequestedMonth}
+                  />
+                </>
+              ) : (
+                <MonthTable
+                  rows={trend}
+                  selectedMonth={data.month}
+                  columns={[
+                    { label: 'Beklenen', value: (row) => formatNumber(row.expected) },
+                    { label: 'Yenilenen', value: (row) => formatNumber(row.renewed) },
+                    { label: 'Bekleyen', value: (row) => formatNumber(row.pending) },
+                    { label: 'Bekleyen müşteri', value: (row) => formatNumber(row.pendingCustomers) },
+                    { label: 'Oran', value: (row) => formatPercent(row.renewed, row.expected) },
+                  ]}
+                />
+              )}
+            </Panel>
+
+            <Panel
+              className="lg:col-span-2"
+              title="Yenileme ve yeni lisans"
+              description="Ay içinde yapılan işlemler"
+              actions={<ViewToggle view={activityView} onChange={setActivityView} />}
+            >
+              {pastRows.length === 0 ? (
+                <p className="py-16 text-center text-sm text-muted-foreground">
+                  Seçilen dönem henüz başlamadı. Geçmiş ayları görmek için bu aya dönün.
+                </p>
+              ) : activityView === 'chart' ? (
+                <>
+                  <Legend items={[{ ...SERIES.renewals, shape: 'line' }, { ...SERIES.newLicences, shape: 'line' }]} />
+                  <ActivityLineChart rows={pastRows} selectedMonth={data.month} currentMonth={data.currentMonth} />
+                </>
+              ) : (
+                <MonthTable
+                  rows={pastRows}
+                  selectedMonth={data.month}
+                  columns={[
+                    { label: 'Yenileme', value: (row) => formatNumber(row.renewals) },
+                    { label: 'Yeni lisans', value: (row) => formatNumber(row.newLicences) },
+                    { label: 'Deneme', value: (row) => formatNumber(row.newTrials) },
+                  ]}
+                />
+              )}
+            </Panel>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Kategoriye Göre · {formatMonth(data.month)}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {data.categories.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Bu ay için kayıt yok.</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Kategori</TableHead>
-                      <TableHead className="text-right">Beklenen Yenileme</TableHead>
-                      <TableHead className="text-right">Bekleyen</TableHead>
-                      <TableHead className="text-right">Yenilenen</TableHead>
-                      <TableHead className="text-right">Yapılan Yenileme</TableHead>
-                      <TableHead className="text-right">Yeni Lisans</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.categories.map((row) => (
-                      <TableRow key={row.category}>
-                        <TableCell className="font-medium">{row.category}</TableCell>
-                        <TableCell className="text-right tabular-nums">{row.expected}</TableCell>
-                        <TableCell className="text-right tabular-nums">{row.pending}</TableCell>
-                        <TableCell className="text-right tabular-nums">{row.renewed}</TableCell>
-                        <TableCell className="text-right tabular-nums">{row.renewals}</TableCell>
-                        <TableCell className="text-right tabular-nums">{row.newLicences}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                  <TableFooter>
-                    <TableRow>
-                      <TableCell>Toplam</TableCell>
-                      <TableCell className="text-right tabular-nums">{categoryTotals.expected}</TableCell>
-                      <TableCell className="text-right tabular-nums">{categoryTotals.pending}</TableCell>
-                      <TableCell className="text-right tabular-nums">{categoryTotals.renewed}</TableCell>
-                      <TableCell className="text-right tabular-nums">{categoryTotals.renewals}</TableCell>
-                      <TableCell className="text-right tabular-nums">{categoryTotals.newLicences}</TableCell>
-                    </TableRow>
-                  </TableFooter>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+          <Panel
+            title={`Ürün bazında · ${formatMonth(data.month)}`}
+            description="Her üründe bu ay biten lisanslar, yapılan yenilemeler ve yeni lisanslar"
+            actions={<Legend items={[SERIES.renewed, SERIES.pending]} />}
+          >
+            <CategoryBreakdown categories={data.categories} />
+          </Panel>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Aylık Görünüm</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Ay</TableHead>
-                    <TableHead className="text-right">Beklenen Yenileme</TableHead>
-                    <TableHead className="text-right">Bekleyen</TableHead>
-                    <TableHead className="text-right">Bekleyen Müşteri</TableHead>
-                    <TableHead className="text-right">Yenilenen</TableHead>
-                    <TableHead className="text-right">Yapılan Yenileme</TableHead>
-                    <TableHead className="text-right">Yeni Lisans</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.trend.map((row) => (
-                    <TableRow
-                      key={row.month}
-                      onClick={() => setRequestedMonth(row.month)}
-                      data-state={row.month === data.month ? 'selected' : undefined}
-                      className="cursor-pointer"
-                    >
-                      <TableCell className="font-medium">
-                        {formatMonth(row.month)}
-                        {row.month === data.currentMonth && (
-                          <span className="ml-2 text-xs text-muted-foreground">(bu ay)</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">{row.expected}</TableCell>
-                      <TableCell className="text-right tabular-nums">{row.pending}</TableCell>
-                      <TableCell className="text-right tabular-nums">{row.pendingCustomers}</TableCell>
-                      <TableCell className="text-right tabular-nums">{row.renewed}</TableCell>
-                      <TableCell className="text-right tabular-nums">{isFuture(row.month) ? '–' : row.renewals}</TableCell>
-                      <TableCell className="text-right tabular-nums">{isFuture(row.month) ? '–' : row.newLicences}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <p className="mt-4 text-xs text-muted-foreground">
-                Geçmiş aylarda &quot;Bekleyen&quot;, bitiş tarihi o ayda olup hiç yenilenmemiş lisanslardır.
-                Müşteriler telefon numarasına göre eşleştirilir. Deneme, sınırsız ve arşivlenmiş lisanslar beklenen yenilemeye dahil değildir.
-              </p>
-            </CardContent>
-          </Card>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Müşteriler telefon numarasına göre eşleştirilir. Deneme, sınırsız ve arşivlenmiş lisanslar beklenen yenilemelere dahil değildir.
+            Geçmiş aylarda &quot;bekleyen&quot;, süresi dolup yenilenmeyen lisans demektir.
+          </p>
         </div>
       )}
     </div>
