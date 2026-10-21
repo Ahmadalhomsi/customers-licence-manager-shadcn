@@ -14,7 +14,8 @@ export async function PUT(req, { params }) {
         }
 
         const { id } = await params;
-        const { username, name, password, active, permissions } = await req.json();
+        const { username: rawUsername, name, password, active, permissions } = await req.json();
+        const username = typeof rawUsername === "string" ? rawUsername.trim() : rawUsername;
 
         // Check if admin exists
         const existingAdmin = await prisma.admin.findUnique({ where: { id } });

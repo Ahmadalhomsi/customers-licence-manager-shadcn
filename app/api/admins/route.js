@@ -32,7 +32,8 @@ export async function POST(req) {
             return NextResponse.json({ error: 'Yasak: Yönetici oluşturma izniniz yok' }, { status: 403 });
         }
 
-        const { username, name, password, active, permissions } = await req.json();
+        const { username: rawUsername, name, password, active, permissions } = await req.json();
+        const username = typeof rawUsername === "string" ? rawUsername.trim() : rawUsername;
 
         if (!username || !password) {
             return NextResponse.json({ error: 'Kullanıcı adı ve şifre zorunludur' }, { status: 400 });
@@ -71,7 +72,8 @@ export async function PUT(req) {
             return NextResponse.json({ error: 'Yasak: Yöneticileri güncelleme izniniz yok' }, { status: 403 });
         }
 
-        const { id, username, name, password, active, permissions } = await req.json();
+        const { id, username: rawUsername, name, password, active, permissions } = await req.json();
+        const username = typeof rawUsername === "string" ? rawUsername.trim() : rawUsername;
 
         // Check if admin exists
         const existingAdmin = await prisma.admin.findUnique({ where: { id } });

@@ -61,23 +61,20 @@ export default function AdminsPage() {
         canUseAssistant: "Asistan Kullanabilir (ChatGPT / Claude)",
     };
 
+    // Turns a failed API response into an Error carrying the server's own message
+    const responseError = async (response, fallback) => {
+        const data = await response.json().catch(() => ({}));
+        return new Error(data.error || data.message || fallback);
+    };
+
     const fetchAdmins = async () => {
         try {
             const response = await fetch("/api/admins");
-            const data = await response.json();
-            if (response.status === 403) {
-                toast.error("Yasak: Admin görüntüleme izniniz yok");
-            }
-            else
-                setAdmins(data);
-
+            if (!response.ok) throw await responseError(response, "Yöneticiler yüklenemedi");
+            setAdmins(await response.json());
         } catch (error) {
             console.log('Error fetching admins:', error);
-
-            if (error.response.status === 403)
-                toast.error('Yasak: Admin görüntüleme izniniz yok')
-            else
-                console.log('Error fetching admins:', error)
+            toast.error(error.message);
         }
     };
 
@@ -101,7 +98,7 @@ export default function AdminsPage() {
                 body: JSON.stringify(formData),
             });
 
-            if (!response.ok) throw new Error("Yönetici kaydedilemedi");
+            if (!response.ok) throw await responseError(response, "Yönetici kaydedilemedi");
 
             toast.success(editingAdmin
                 ? "Yönetici güncellendi"
@@ -111,10 +108,8 @@ export default function AdminsPage() {
             setIsDialogOpen(false);
             fetchAdmins();
         } catch (error) {
-            if (error.response.status === 403)
-                toast.error('Yasak: Admin oluşturma ya da güncelleme izniniz yok')
-            else
-                console.log('Error creating or updating admin:', error)
+            console.log('Error creating or updating admin:', error);
+            toast.error(error.message);
         } finally {
             setIsLoading(false);
         }
@@ -130,18 +125,12 @@ export default function AdminsPage() {
                 body: JSON.stringify({ id: admin.id }),
             });
 
-            if (!response.ok) throw new Error("Yönetici silinemedi");
+            if (!response.ok) throw await responseError(response, "Yönetici silinemedi");
 
-            toast({
-                description: "Yönetici silindi",
-            });
-
+            toast.success("Yönetici silindi");
             fetchAdmins();
         } catch (error) {
-            toast({
-                description: error.message,
-                variant: "destructive",
-            });
+            toast.error(error.message);
         }
     };
 
