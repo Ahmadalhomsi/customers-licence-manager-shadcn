@@ -7,7 +7,8 @@ export async function proxy(req) {
   const { pathname } = req.nextUrl;
 
   // Allow public routes
-  const publicRoutes = ["/login", "/api/login", "/api/external", "/admins", "/api/cron"];
+  // /api/mcp and the OAuth routes authenticate the assistant themselves (bearer tokens, not the login cookie)
+  const publicRoutes = ["/login", "/api/login", "/api/external", "/api/cron", "/api/mcp", "/api/oauth", "/oauth", "/.well-known"];
   if (publicRoutes.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
   }
@@ -75,5 +76,6 @@ export async function proxy(req) {
 }
 
 export const config = {
-  matcher: ["/api/:path*", "/", "/login", "/services", "/log", "/customers"],
+  // Every page and API route; static assets (/_next/* and files with an extension such as /MAPOS_LOGO.png) are skipped
+  matcher: ["/((?!_next/|.*\\.[a-zA-Z0-9]+$).*)"],
 };

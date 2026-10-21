@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { verifyJWT } from "@/lib/jwt";
+import { ADMIN_SELECT, pickPermissions } from "@/lib/admin";
 
 export async function PUT(req, { params }) {
     try {
@@ -22,18 +23,16 @@ export async function PUT(req, { params }) {
         }
 
         // Hash password if provided
-        let updatedData = { username, name, active, ...permissions };
+        let updatedData = { username, name, active, ...pickPermissions(permissions) };
         if (password) {
             updatedData.password = await bcrypt.hash(password, 10);
         }
-        console.log("AAAAA");
-
-        console.log(updatedData);
 
         // Update admin
         const updatedAdmin = await prisma.admin.update({
             where: { id },
             data: updatedData,
+            select: ADMIN_SELECT,
         });
 
         return NextResponse.json(

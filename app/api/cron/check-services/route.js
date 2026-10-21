@@ -7,11 +7,15 @@ export const dynamic = 'force-dynamic'; // Ensure this route is not cached
 
 export async function GET(req) {
     try {
-        // Optional: Add authorization check here
-        // const authHeader = req.headers.get('authorization');
-        // if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        //     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        // }
+        // The scheduler must send "Authorization: Bearer <CRON_SECRET>". Without CRON_SECRET the
+        // endpoint stays open so existing schedulers keep working; set it to close the endpoint.
+        if (process.env.CRON_SECRET) {
+            if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            }
+        } else {
+            console.warn('CRON_SECRET is not set: /api/cron/check-services is callable by anyone');
+        }
 
         const TIMEZONE = 'Europe/Istanbul';
 

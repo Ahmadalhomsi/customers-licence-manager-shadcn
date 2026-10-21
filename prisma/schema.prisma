@@ -32,9 +32,75 @@ model Admin {
   canSeePasswords  Boolean @default(false)
   canViewPhysicalProducts Boolean @default(false)
   canEditPhysicalProducts Boolean @default(false)
+  canUseAssistant         Boolean @default(false) // may connect an AI assistant (ChatGPT, Claude) through /api/mcp
+
+  oauthAuthCodes     OAuthAuthCode[]
+  oauthRefreshTokens OAuthRefreshToken[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// AI assistant apps registered through OAuth dynamic client registration (/api/oauth/register)
+model OAuthClient {
+  id               String   @id @default(cuid()) // the OAuth client_id
+  name             String?
+  redirectUris     String[]
+  clientSecretHash String? // only for clients that registered with client_secret_post / client_secret_basic
+
+  authCodes     OAuthAuthCode[]
+  refreshTokens OAuthRefreshToken[]
+
+  createdAt DateTime @default(now())
+}
+
+// Single-use authorization codes (stored hashed), valid for a few minutes
+model OAuthAuthCode {
+  id            String    @id @default(cuid())
+  codeHash      String    @unique
+  clientId      String
+  client        OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  adminId       String
+  admin         Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  redirectUri   String
+  codeChallenge String // PKCE S256 challenge
+  scope         String
+  expiresAt     DateTime
+  usedAt        DateTime?
+
+  createdAt DateTime @default(now())
+}
+
+// Refresh tokens (stored hashed); rotated on every use
+model OAuthRefreshToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  clientId  String
+  client    OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  adminId   String
+  admin     Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  scope     String
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([adminId])
+}
+
+// Every change made through the AI assistant, with the admin who made it
+model AssistantActionLog {
+  id            String @id @default(cuid())
+  adminId       String
+  adminUsername String
+  tool          String
+  input         String // JSON of the tool arguments
+  result        String // JSON summary of what changed
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([adminId])
 }
 
 model Customer {

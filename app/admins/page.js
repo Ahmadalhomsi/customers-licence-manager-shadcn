@@ -44,6 +44,7 @@ export default function AdminsPage() {
             canSeePasswords: false,
             canViewPhysicalProducts: false,
             canEditPhysicalProducts: false,
+            canUseAssistant: false,
         },
     });
 
@@ -57,6 +58,7 @@ export default function AdminsPage() {
         canSeePasswords: "Şifreleri Görüntüleme",
         canViewPhysicalProducts: "Fiziksel Ürünleri Görüntüleme",
         canEditPhysicalProducts: "Fiziksel Ürünleri Düzenleme",
+        canUseAssistant: "Asistan Kullanabilir (ChatGPT / Claude)",
     };
 
     const fetchAdmins = async () => {
@@ -160,6 +162,7 @@ export default function AdminsPage() {
                 canSeePasswords: false,
                 canViewPhysicalProducts: false,
                 canEditPhysicalProducts: false,
+                canUseAssistant: false,
             },
         });
         setShowPassword(false);
@@ -183,6 +186,7 @@ export default function AdminsPage() {
                 canSeePasswords: admin.canSeePasswords,
                 canViewPhysicalProducts: admin.canViewPhysicalProducts,
                 canEditPhysicalProducts: admin.canEditPhysicalProducts,
+                canUseAssistant: admin.canUseAssistant,
             },
         });
         setShowPassword(false);

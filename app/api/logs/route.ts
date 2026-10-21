@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { findIdsByTurkishSearch } from '@/lib/turkish-search';
+import { verifyJWT } from '@/lib/jwt';
 
 export async function GET(request: NextRequest) {
   try {
+    const decoded = await verifyJWT(request.cookies.get('token')?.value);
+    if (!decoded.permissions.canViewServices) {
+      return NextResponse.json({ error: 'Yasak: Hizmet görüntüleme izniniz yok' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const requestedLimit = parseInt(searchParams.get('limit') || '20');
@@ -324,6 +330,12 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Wiping the whole log is restricted to admins who can manage other admins
+    const decoded = await verifyJWT(request.cookies.get('token')?.value);
+    if (!decoded.permissions.canEditAdmins) {
+      return NextResponse.json({ error: 'Yasak: Kayıtları silme izniniz yok' }, { status: 403 });
+    }
+
     // Delete all logs from the database
     const deletedCount = await prisma.apiLog.deleteMany({});
     

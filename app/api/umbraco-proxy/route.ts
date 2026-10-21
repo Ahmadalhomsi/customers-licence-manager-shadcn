@@ -18,7 +18,7 @@ export async function GET(request) {
 
     try {
         const response = await fetch(
-            `https://gncmenu.com/umbraco/backoffice/UmbracoApi/Media/GetById?id=${id}`,
+            `https://gncmenu.com/umbraco/backoffice/UmbracoApi/Media/GetById?id=${encodeURIComponent(id)}`,
             {
                 method: 'GET',
                 headers: {

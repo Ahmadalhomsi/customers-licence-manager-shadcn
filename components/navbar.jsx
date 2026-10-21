@@ -20,7 +20,8 @@ import { simpleAuthenticatedGet } from "@/lib/simple-auth";
 export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const isLoginPage = pathname === "/login";
+  // The assistant connection page (/oauth/authorize) is a standalone sign-in screen like /login
+  const isLoginPage = pathname === "/login" || pathname.startsWith("/oauth");
   const [notifications, setNotifications] = useState([]);
   const [adminName, setAdminName] = useState("");
   const [permissions, setPermissions] = useState(null);

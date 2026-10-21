@@ -3,8 +3,8 @@ import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { verifyJWT } from "@/lib/jwt";
+import { ADMIN_SELECT, pickPermissions } from "@/lib/admin";
 
-// Add this to your existing route.js file
 export async function GET(req) {
     try {
         const token = req.cookies.get("token")?.value;
@@ -14,7 +14,7 @@ export async function GET(req) {
             return NextResponse.json({ error: 'Yasak: Admin görüntüleme izniniz yok' }, { status: 403 });
         }
 
-        const admins = await prisma.admin.findMany();
+        const admins = await prisma.admin.findMany({ select: ADMIN_SELECT });
         return NextResponse.json(admins);
     } catch (error) {
         console.error("Error fetching admins:", error);
@@ -22,11 +22,55 @@ export async function GET(req) {
     }
 }
 
+// Create Admin (POST)
+export async function POST(req) {
+    try {
+        const token = req.cookies.get("token")?.value;
+        const decoded = await verifyJWT(token);
 
+        if (!decoded.permissions.canEditAdmins) {
+            return NextResponse.json({ error: 'Yasak: Yönetici oluşturma izniniz yok' }, { status: 403 });
+        }
+
+        const { username, name, password, active, permissions } = await req.json();
+
+        if (!username || !password) {
+            return NextResponse.json({ error: 'Kullanıcı adı ve şifre zorunludur' }, { status: 400 });
+        }
+
+        const existingAdmin = await prisma.admin.findUnique({ where: { username } });
+        if (existingAdmin) {
+            return NextResponse.json({ error: 'Bu kullanıcı adı zaten kullanılıyor' }, { status: 409 });
+        }
+
+        const admin = await prisma.admin.create({
+            data: {
+                username,
+                name,
+                active: active !== undefined ? Boolean(active) : true,
+                password: await bcrypt.hash(password, 10),
+                ...pickPermissions(permissions),
+            },
+            select: ADMIN_SELECT,
+        });
+
+        return NextResponse.json({ message: "Admin created successfully", admin }, { status: 201 });
+    } catch (error) {
+        console.error("Error creating admin:", error);
+        return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    }
+}
 
 // Update Admin (PUT)
 export async function PUT(req) {
     try {
+        const token = req.cookies.get("token")?.value;
+        const decoded = await verifyJWT(token);
+
+        if (!decoded.permissions.canEditAdmins) {
+            return NextResponse.json({ error: 'Yasak: Yöneticileri güncelleme izniniz yok' }, { status: 403 });
+        }
+
         const { id, username, name, password, active, permissions } = await req.json();
 
         // Check if admin exists
@@ -36,18 +80,16 @@ export async function PUT(req) {
         }
 
         // Hash password if provided
-        let updatedData = { username, name, active, ...permissions };
+        let updatedData = { username, name, active, ...pickPermissions(permissions) };
         if (password) {
             updatedData.password = await bcrypt.hash(password, 10);
         }
-        console.log("AAAAA");
-
-        console.log(updatedData);
 
         // Update admin
         const updatedAdmin = await prisma.admin.update({
             where: { id },
             data: updatedData,
+            select: ADMIN_SELECT,
         });
 
         return NextResponse.json(
@@ -63,7 +105,18 @@ export async function PUT(req) {
 // Delete Admin (DELETE)
 export async function DELETE(req) {
     try {
+        const token = req.cookies.get("token")?.value;
+        const decoded = await verifyJWT(token);
+
+        if (!decoded.permissions.canEditAdmins) {
+            return NextResponse.json({ error: 'Yasak: Yönetici silme izniniz yok' }, { status: 403 });
+        }
+
         const { id } = await req.json();
+
+        if (id === decoded.id) {
+            return NextResponse.json({ error: 'Kendi hesabınızı silemezsiniz' }, { status: 400 });
+        }
 
         // Check if admin exists
         const existingAdmin = await prisma.admin.findUnique({ where: { id } });

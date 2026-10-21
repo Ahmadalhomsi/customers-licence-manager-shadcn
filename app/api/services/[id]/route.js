@@ -128,6 +128,13 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
     const { id } = await params;
     try {
+        const token = req.cookies.get('token')?.value;
+        const decoded = await verifyJWT(token);
+
+        if (!decoded.permissions.canEditServices) {
+            return NextResponse.json({ error: 'Yasak: Hizmet silme izniniz yok' }, { status: 403 });
+        }
+
         await prisma.service.delete({
             where: { id: id },
         });
