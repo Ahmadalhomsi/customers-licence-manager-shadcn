@@ -16,7 +16,7 @@ const AUTHORIZE_PARAMS = ["client_id", "redirect_uri", "response_type", "code_ch
 const ALLOWED_ACTIONS = [
   "Aylık lisans ve yenileme rakamlarını görme",
   "Müşteri ve lisans arama, kalan gün sayısını görme",
-  "Lisans uzatma",
+  "Lisans uzatma ve sınırsız yapma",
   "Lisansı pasife alma, arşivleme ve geri alma",
 ]
 
