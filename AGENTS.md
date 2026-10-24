@@ -112,11 +112,11 @@ The editor may flag `url` in the `datasource` block — that warning is from Pri
 
 ## Dependencies and deployment
 
-- Deployed with Docker on Coolify. The Dockerfile installs with **pnpm 9** and `--frozen-lockfile`, so `pnpm-lock.yaml`
-  must match `package.json`. Update the lockfile with the same major version to avoid unrelated upgrades:
+- Deployed with Docker on Coolify. The Dockerfile installs with **pnpm 12.4.1** (overridden in package.json) and `--frozen-lockfile`, so `pnpm-lock.yaml`
+  must match `package.json`. Keep the local pnpm at the same major version:
 
   ```bash
-  npx pnpm@9 install --lockfile-only
+  pnpm install
   ```
 
 - Environment (see `.env.example`): `DATABASE_URL`, `JWT_SECRET` (required — login refuses to work without it),

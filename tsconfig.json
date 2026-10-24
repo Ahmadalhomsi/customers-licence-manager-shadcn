@@ -23,6 +23,7 @@
       }
     ],
     "baseUrl": ".", // baseUrl remains the same
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": [
         "*"
