@@ -2,7 +2,7 @@
 FROM node:20.14.0-alpine AS base
 
 # Install pnpm globally
-RUN npm install -g pnpm@9
+RUN npm install -g pnpm@12.4.1
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -10,7 +10,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy only lockfile and manifest for better caching
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml ./
 
 # Install all dependencies including dev dependencies for Prisma
 RUN pnpm install --frozen-lockfile
