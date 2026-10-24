@@ -12,3 +12,10 @@ ignoredBuiltDependencies:
   - '@prisma/client'
   - '@prisma/engines'
   - prisma
+
+overrides:
+  brace-expansion: '>=5.0.12'
+  js-yaml: '>=4.3.2'
+  deepmerge-ts: '>=8.0.0'
+  shell-quote: '>=1.11.0'
+  follow-redirects: '>=1.16.1'
