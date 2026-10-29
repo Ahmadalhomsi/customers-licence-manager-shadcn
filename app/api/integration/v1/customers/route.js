@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { isIntegrationRequest } from '@/lib/integration-auth';
 import { findIdsByTurkishSearch } from '@/lib/turkish-search';
-import { normalizePhone } from '@/lib/phone';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,14 +38,14 @@ export async function GET(req) {
             prisma.customer.count({ where }),
             prisma.customer.findMany({
                 where,
-                select: { id: true, name: true, signBoard: true, phone: true, email: true, createdAt: true },
+                select: { id: true, name: true, signBoard: true },
                 orderBy: [{ name: 'asc' }, { id: 'asc' }],
                 ...(paged && { skip: (page - 1) * limit, take: limit }),
             }),
         ]);
 
         return NextResponse.json({
-            customers: customers.map((customer) => ({ ...customer, phone: normalizePhone(customer.phone) })),
+            customers,
             total,
             ...(paged && { pagination: { page, limit, totalPages: Math.ceil(total / limit) } }),
         });
