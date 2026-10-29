@@ -35,6 +35,7 @@ There is **no test suite**. Verify changes by running the affected flow, or by c
 | `app/customers`, `app/services`, `app/products`, `app/log`, `app/admins` | Panel pages |
 | `app/api/*` | Panel API (cookie JWT auth) |
 | `app/api/external/*` | Public endpoints used by the POS apps (licence validation, trial creation, renew) |
+| `app/api/integration/v1/*` | Server-to-server API for app.mapos (food platform stores); API key auth |
 | `app/api/mcp` | MCP server for the AI assistant |
 | `app/api/oauth/*`, `app/oauth/authorize`, `app/.well-known/*` | OAuth 2.1 server the assistant signs in through |
 | `app/api/cron/check-services` | Daily expiry notifications (called by an external scheduler) |
@@ -60,7 +61,7 @@ Key `lib/` modules:
 
 - Web login (`/api/login`) issues a 30-day JWT stored in the `token` cookie (and localStorage).
 - `proxy.js` requires that cookie for every page and API route except the `publicRoutes` list
-  (`/login`, `/api/login`, `/api/external`, `/api/cron`, `/api/mcp`, `/api/oauth`, `/oauth`, `/.well-known`).
+  (`/login`, `/api/login`, `/api/external`, `/api/cron`, `/api/integration`, `/api/mcp`, `/api/oauth`, `/oauth`, `/.well-known`).
   Routes on that list must authenticate themselves.
 - **Every API route checks a permission itself**, even though the proxy already checked the login:
 
@@ -76,6 +77,7 @@ Key `lib/` modules:
 - Never return password columns: `Admin.password` (bcrypt hash) and `Customer.password` (shown only with `canSeePasswords`).
   Prefer explicit Prisma `select`s. Customer phone/email go to the assistant only with `canViewCustomers`.
 - `/api/cron/check-services` requires `Authorization: Bearer <CRON_SECRET>` when `CRON_SECRET` is set.
+- `/api/integration/*` requires `Authorization: Bearer <MAPOS_INTEGRATION_KEY>` (`lib/integration-auth.js`); without the key it rejects everything.
 
 ## Domain rules
 
@@ -120,7 +122,7 @@ The editor may flag `url` in the `datasource` block — that warning is from Pri
   ```
 
 - Environment (see `.env.example`): `DATABASE_URL`, `JWT_SECRET` (required — login refuses to work without it),
-  `CRON_SECRET`, `APP_URL` (public URL; used by OAuth metadata and assistant token audience), `renewPassword`
+  `CRON_SECRET`, `MAPOS_INTEGRATION_KEY`, `APP_URL` (public URL; used by OAuth metadata and assistant token audience), `renewPassword`
   (only for `/api/external/renew`), optional `MCP_REDIRECT_HOSTS`.
 
 ## AI assistant (MCP)

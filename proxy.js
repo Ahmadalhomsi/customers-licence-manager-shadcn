@@ -8,7 +8,8 @@ export async function proxy(req) {
 
   // Allow public routes
   // /api/mcp and the OAuth routes authenticate the assistant themselves (bearer tokens, not the login cookie)
-  const publicRoutes = ["/login", "/api/login", "/api/external", "/api/cron", "/api/mcp", "/api/oauth", "/oauth", "/.well-known"];
+  // /api/integration checks the app.mapos API key itself (lib/integration-auth.js)
+  const publicRoutes = ["/login", "/api/login", "/api/external", "/api/cron", "/api/integration", "/api/mcp", "/api/oauth", "/oauth", "/.well-known"];
   if (publicRoutes.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
   }
