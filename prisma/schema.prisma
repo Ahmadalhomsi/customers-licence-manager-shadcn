@@ -144,6 +144,7 @@ model Service {
   terminal    String? // Device name
   lastLoginDate DateTime? // Son giriş tarihi - null if never logged in
   version     String? // Application version - updated on each validation
+  externalId  String? @unique // Store in app.mapos ("<platform>:<storeId>") for licences created through /api/integration
   archived    Boolean @default(false)
   archivedAt  DateTime?
 

@@ -52,6 +52,8 @@ Key `lib/` modules:
 - `dashboard.js` — monthly figures (`getDashboard`), Istanbul month helpers, `isTrial`, `customerKey`.
 - `licences.js` — `extendServices`, `makeServicesUnlimited`, `remainingDays`, `istanbulDate`, `UNLIMITED_END_DATE`.
 - `licence-products.js` — product lines and which ones count one licence per customer.
+- `platform-licences.js` — `createPlatformLicence` / `deletePlatformLicence`: 1-year food platform licences for app.mapos stores, keyed by `Service.externalId` (`<platform>:<storeId>`). Delete archives and deactivates; re-adding the store restores the same licence.
+- `integration-auth.js` — API key check for `/api/integration` (`MAPOS_INTEGRATION_KEY`).
 - `phone.js` — `normalizePhone` (Turkish numbers to 10 digits; placeholders → null).
 - `turkish-search.js` / `turkish-utils.js` — Turkish-insensitive search (`ı/i`, `ş/s`, …).
 - `oauth.js`, `assistant-tools.js` — assistant sign-in and MCP tools.
