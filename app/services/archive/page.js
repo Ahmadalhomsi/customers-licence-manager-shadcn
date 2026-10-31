@@ -17,6 +17,7 @@ export default function ServicesArchivePage() {
   const [services, setServices] = useState([])
   const [loading, setLoading] = useState(true)
   const [customers, setCustomers] = useState([])
+  const [availableCategories, setAvailableCategories] = useState([])
 
   const [serviceModalVisible, setServiceModalVisible] = useState(false)
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false)
@@ -43,6 +44,23 @@ export default function ServicesArchivePage() {
   const [dateRangeFilter, setDateRangeFilter] = useState()
   const [endDateRangeFilter, setEndDateRangeFilter] = useState()
   const [lastLoginDateRangeFilter, setLastLoginDateRangeFilter] = useState()
+
+  // Distinct categories across all archive pages (for the filter dropdown).
+  // Only refetched after data-changing actions.
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/services/categories?archive=true')
+      setAvailableCategories(response.data.categories || [])
+    } catch (error) {
+      if (error.response?.status === 403) {
+        toast.error('Yasak: Hizmet görüntüleme izniniz yok')
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchCategories()
+  }, [fetchCategories])
 
   const fetchCustomers = async () => {
     try {
@@ -160,6 +178,7 @@ export default function ServicesArchivePage() {
 
       toast.success(`${selectedServices.length} hizmet arşivden çıkarıldı`)
       fetchServices(pagination.page, searchTerm, sortBy, sortOrder)
+      fetchCategories()
     } catch (error) {
       console.error('Error unarchiving services:', error)
       toast.error('Hizmetler arşivden çıkarılırken hata oluştu')
@@ -181,6 +200,7 @@ export default function ServicesArchivePage() {
 
       toast.success(`${selectedServices.length} arşiv hizmeti silindi`)
       fetchServices(pagination.page, searchTerm, sortBy, sortOrder)
+      fetchCategories()
     } catch (error) {
       console.error('Error deleting archived services:', error)
       toast.error('Arşiv hizmetleri silinirken hata oluştu')
@@ -207,6 +227,7 @@ export default function ServicesArchivePage() {
         await axios.put(`/api/services/${selectedService.id}`, formData)
       }
       await fetchServices(pagination.page, searchTerm, sortBy, sortOrder)
+      fetchCategories()
       setServiceModalVisible(false)
       setSelectedService(null)
     } catch (error) {
@@ -221,6 +242,7 @@ export default function ServicesArchivePage() {
     try {
       await axios.delete(`/api/services/${selectedService.id}`)
       fetchServices(pagination.page, searchTerm, sortBy, sortOrder)
+      fetchCategories()
       setDeleteConfirmVisible(false)
     } catch (error) {
       console.log('Error deleting service:', error)
@@ -305,6 +327,7 @@ export default function ServicesArchivePage() {
           onStatusChange={setStatusFilter}
           categoryFilter={categoryFilter}
           onCategoryChange={setCategoryFilter}
+          availableCategories={availableCategories}
           dateRangeFilter={dateRangeFilter}
           onDateRangeChange={setDateRangeFilter}
           endDateRangeFilter={endDateRangeFilter}

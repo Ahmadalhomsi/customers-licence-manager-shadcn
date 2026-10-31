@@ -111,6 +111,7 @@ export function ServiceTable({
     onBulkExtend,
     onBulkArchive,
     onBulkDelete,
+    availableCategories = [],
     archiveActionLabel = 'Arşive taşı'
 }) {
     // Remove client-side filter states - they'll come from props now
@@ -120,8 +121,12 @@ export function ServiceTable({
     // Check if any service has a deviceToken
     const hasDeviceTokens = services.some(service => service.deviceToken);
 
-    // Get unique categories from services
-    const availableCategories = [...new Set(services.map(service => service.category || 'Adisyon Programı'))];
+    // Category options come from the server (distinct across every page, sorted by usage).
+    // Fall back to the current page's rows until the list arrives.
+    const categoryOptions = availableCategories.length > 0
+        ? availableCategories.map((item) => item.category)
+        : [...new Set(services.map((service) => service.category || 'Adisyon Programı'))]
+            .sort((a, b) => a.localeCompare(b, 'tr'));
 
     // Helper function to get text color for categories
     const getCategoryTextColor = (category) => {
@@ -342,7 +347,7 @@ export function ServiceTable({
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Tüm Kategoriler</SelectItem>
-                            {availableCategories.map((category) => (
+                            {categoryOptions.map((category) => (
                                 <SelectItem key={category} value={category}>
                                     <span className={getCategoryTextColor(category)}>
                                         {category}

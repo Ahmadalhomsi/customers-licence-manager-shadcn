@@ -29,6 +29,7 @@ export default function ServicesPage() {
   const [selectedService, setSelectedService] = useState(null)
   const [loading, setLoading] = useState(true)
   const [customers, setCustomers] = useState([])
+  const [availableCategories, setAvailableCategories] = useState([])
 
   const [renewHistoryOpen, setRenewHistoryOpen] = useState(false)
   const [selectedServiceForHistory, setSelectedServiceForHistory] = useState(null)
@@ -213,6 +214,21 @@ export default function ServicesPage() {
     initialLoad()
     fetchCustomers()
     fetchAdminData();
+    fetchCategories();
+  }, [])
+
+  // Distinct categories across all pages (for the filter dropdown) — a small
+  // indexed GROUP BY, so it is only refetched after data-changing actions.
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await axios.get('/api/services/categories')
+      setAvailableCategories(response.data.categories || [])
+    } catch (error) {
+      if (error.response?.status === 403)
+        toast.error('Yasak: Hizmet görüntüleme izniniz yok')
+      else
+        console.log('Error fetching service categories:', error)
+    }
   }, [])
 
   // Setup keyboard shortcuts after functions are defined
@@ -271,6 +287,7 @@ export default function ServicesPage() {
       try {
         await axios.delete(`/api/services/${selectedService.id}`)
         fetchServices(pagination.page, searchTerm, sortBy, sortOrder)
+        fetchCategories()
         setDeleteConfirmVisible(false)
       } catch (error) {
         console.log('Error deleting service:', error)
@@ -286,6 +303,7 @@ export default function ServicesPage() {
         await axios.post('/api/services', formData)
       }
       await fetchServices(pagination.page, searchTerm, sortBy, sortOrder) // Ensure fetch completes before closing modal
+      fetchCategories()
       setServiceModalVisible(false)
       setSelectedService(null)
     } catch (error) {
@@ -301,6 +319,7 @@ export default function ServicesPage() {
       
       // Refresh the services list
       await fetchServices(pagination.page, searchTerm, sortBy, sortOrder)
+      fetchCategories()
       setBulkServiceModalVisible(false)
       setSelectedCustomerForBulk(null) // Reset selected customer
       
@@ -338,6 +357,7 @@ export default function ServicesPage() {
 
       toast.success(`${selectedServices.length} hizmet arşive taşındı`);
       fetchServices(pagination.page, searchTerm, sortBy, sortOrder);
+      fetchCategories();
     } catch (error) {
       console.error('Error archiving services:', error);
       toast.error('Hizmetler arşive taşınırken hata oluştu');
@@ -359,6 +379,7 @@ export default function ServicesPage() {
 
       toast.success(`${selectedServices.length} hizmet silindi`);
       fetchServices(pagination.page, searchTerm, sortBy, sortOrder);
+      fetchCategories();
     } catch (error) {
       console.error('Error deleting services:', error);
       toast.error('Seçili hizmetler silinirken hata oluştu');
@@ -618,6 +639,7 @@ export default function ServicesPage() {
           onStatusChange={setStatusFilter}
           categoryFilter={categoryFilter}
           onCategoryChange={setCategoryFilter}
+          availableCategories={availableCategories}
           dateRangeFilter={dateRangeFilter}
           onDateRangeChange={setDateRangeFilter}
           endDateRangeFilter={endDateRangeFilter}
