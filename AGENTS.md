@@ -53,7 +53,8 @@ Key `lib/` modules:
 - `licences.js` — `extendServices`, `makeServicesUnlimited`, `remainingDays`, `istanbulDate`, `UNLIMITED_END_DATE`.
 - `licence-products.js` — product lines and which ones count one licence per customer; `MAMENU_CATEGORY` and `POS_PROVIDERS`
   (the POS proxy saves the provider, e.g. `Beko POS`, as the category). The service forms and tables read these lists.
-- `integration-licences.js` — `createIntegrationLicence` / `deleteIntegrationLicence`: 1-year licences created by connected systems,
+- `integration-licences.js` — `createIntegrationLicence` / `deleteIntegrationLicence`: 1-year licences created by connected systems
+  (from now, or from an optional `startingDate` for late syncs; future dates rejected),
   keyed by `Service.externalId` (app.mapos `<platform>:<storeId>`, MaMenu `mamenu:<id>`, POS proxy `pos-proxy:<provider>:<serial>`).
   `SOURCES` lists which products each system may create. Delete archives and deactivates; sending the same id again restores the licence.
 - `integration-auth.js` — `getIntegrationSource(req)`: which system's API key the request sends (`MAPOS_` / `MAMENU_` / `POS_PROXY_INTEGRATION_KEY`).
