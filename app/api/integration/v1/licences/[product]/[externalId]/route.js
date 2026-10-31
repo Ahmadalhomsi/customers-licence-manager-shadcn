@@ -1,26 +1,27 @@
 import { NextResponse } from 'next/server';
-import { isIntegrationRequest } from '@/lib/integration-auth';
-import { deletePlatformLicence } from '@/lib/platform-licences';
+import { getIntegrationSource } from '@/lib/integration-auth';
+import { deleteIntegrationLicence } from '@/lib/integration-licences';
 import { LicenceError } from '@/lib/licences';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Store deleted in app.mapos: deactivates and archives its licence.
+ * Store, menu or device deleted in a connected system: deactivates and archives its licence.
  *
- * DELETE /api/integration/v1/licences/{platform}/{storeId}
- * - 200 with the licence (also when it was already deleted), 404 when the store has no licence
+ * DELETE /api/integration/v1/licences/{product}/{externalId}
+ * - 200 with the licence (also when it was already deleted), 404 when there is no licence
  */
 export async function DELETE(req, { params }) {
     try {
-        if (!isIntegrationRequest(req)) {
+        const source = getIntegrationSource(req);
+        if (!source) {
             return NextResponse.json({ error: 'UNAUTHORIZED', message: 'Invalid or missing API key' }, { status: 401 });
         }
 
-        const { platform, storeId } = await params;
-        const licence = await deletePlatformLicence({ platform, storeId });
+        const { product, externalId } = await params;
+        const licence = await deleteIntegrationLicence(source, { product, externalId });
         if (!licence) {
-            return NextResponse.json({ error: 'LICENCE_NOT_FOUND', message: 'No licence for this store' }, { status: 404 });
+            return NextResponse.json({ error: 'LICENCE_NOT_FOUND', message: 'No licence for this id' }, { status: 404 });
         }
 
         return NextResponse.json({ deleted: true, licence });

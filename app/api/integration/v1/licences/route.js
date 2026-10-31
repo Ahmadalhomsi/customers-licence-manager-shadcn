@@ -1,20 +1,22 @@
 import { NextResponse } from 'next/server';
-import { isIntegrationRequest } from '@/lib/integration-auth';
-import { createPlatformLicence } from '@/lib/platform-licences';
+import { getIntegrationSource } from '@/lib/integration-auth';
+import { createIntegrationLicence } from '@/lib/integration-licences';
 import { LicenceError } from '@/lib/licences';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Creates the licence for a store created in app.mapos.
+ * Creates the licence for a store, menu or device created in a connected system.
  *
  * POST /api/integration/v1/licences
- * { "customerId": "...", "platform": "yemeksepeti|trendyol|migros|getir", "storeId": "...", "storeName": "..." }
- * - 201 with the new 1-year licence, or 200 with the existing one when the store was already sent
+ * { "customerId": "...", "product": "...", "externalId": "...", "name": "..." }
+ * (app.mapos sends platform / storeId / storeName)
+ * - 201 with the new 1-year licence, or 200 with the existing one when it was already sent
  */
 export async function POST(req) {
     try {
-        if (!isIntegrationRequest(req)) {
+        const source = getIntegrationSource(req);
+        if (!source) {
             return NextResponse.json({ error: 'UNAUTHORIZED', message: 'Invalid or missing API key' }, { status: 401 });
         }
 
@@ -25,7 +27,7 @@ export async function POST(req) {
             return NextResponse.json({ error: 'INVALID_BODY', message: 'Body must be JSON' }, { status: 400 });
         }
 
-        const result = await createPlatformLicence(body || {});
+        const result = await createIntegrationLicence(source, body || {});
         if (!result) {
             return NextResponse.json({ error: 'CUSTOMER_NOT_FOUND', message: 'No customer with this customerId' }, { status: 404 });
         }

@@ -13,6 +13,7 @@ import { Edit, Trash2, Plus, Copy, Key } from "lucide-react";
 import { BeatLoader } from 'react-spinners';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { copyToClipboard } from '@/lib/clipboard';
+import { MAMENU_CATEGORY, POS_PROVIDERS } from '@/lib/licence-products';
 
 const PAYMENT_TYPES = [
   { value: "1month", label: "1 Ay" }, 
@@ -31,7 +32,9 @@ const PAYMENT_TYPES = [
         'Yemek Sepeti': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
         'Migros Yemek': 'bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400',
         'Trendyol Yemek': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
-        'Getir Yemek': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+        'Getir Yemek': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+        [MAMENU_CATEGORY]: 'bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-300',
+        ...Object.fromEntries(POS_PROVIDERS.map((provider) => [provider.category, 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300']))
     };
 
 export function ServicesViewModal({

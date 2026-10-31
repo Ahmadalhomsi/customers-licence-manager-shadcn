@@ -35,7 +35,7 @@ There is **no test suite**. Verify changes by running the affected flow, or by c
 | `app/customers`, `app/services`, `app/products`, `app/log`, `app/admins` | Panel pages |
 | `app/api/*` | Panel API (cookie JWT auth) |
 | `app/api/external/*` | Public endpoints used by the POS apps (licence validation, trial creation, renew) |
-| `app/api/integration/v1/*` | Server-to-server API for app.mapos (food platform stores); API key auth |
+| `app/api/integration/v1/*` | Server-to-server API for connected systems (app.mapos stores, MaMenu menus, POS proxy devices); API key per system |
 | `app/api/mcp` | MCP server for the AI assistant |
 | `app/api/oauth/*`, `app/oauth/authorize`, `app/.well-known/*` | OAuth 2.1 server the assistant signs in through |
 | `app/api/cron/check-services` | Daily expiry notifications (called by an external scheduler) |
@@ -51,9 +51,12 @@ Key `lib/` modules:
 - `admin.js` — `ADMIN_SELECT` (admin fields without the password hash), `pickPermissions`.
 - `dashboard.js` — monthly figures (`getDashboard`), Istanbul month helpers, `isTrial`, `customerKey`.
 - `licences.js` — `extendServices`, `makeServicesUnlimited`, `remainingDays`, `istanbulDate`, `UNLIMITED_END_DATE`.
-- `licence-products.js` — product lines and which ones count one licence per customer.
-- `platform-licences.js` — `createPlatformLicence` / `deletePlatformLicence`: 1-year food platform licences for app.mapos stores, keyed by `Service.externalId` (`<platform>:<storeId>`). Delete archives and deactivates; re-adding the store restores the same licence.
-- `integration-auth.js` — API key check for `/api/integration` (`MAPOS_INTEGRATION_KEY`).
+- `licence-products.js` — product lines and which ones count one licence per customer; `MAMENU_CATEGORY` and `POS_PROVIDERS`
+  (the POS proxy saves the provider, e.g. `Beko POS`, as the category). The service forms and tables read these lists.
+- `integration-licences.js` — `createIntegrationLicence` / `deleteIntegrationLicence`: 1-year licences created by connected systems,
+  keyed by `Service.externalId` (app.mapos `<platform>:<storeId>`, MaMenu `mamenu:<id>`, POS proxy `pos-proxy:<provider>:<serial>`).
+  `SOURCES` lists which products each system may create. Delete archives and deactivates; sending the same id again restores the licence.
+- `integration-auth.js` — `getIntegrationSource(req)`: which system's API key the request sends (`MAPOS_` / `MAMENU_` / `POS_PROXY_INTEGRATION_KEY`).
 - `phone.js` — `normalizePhone` (Turkish numbers to 10 digits; placeholders → null).
 - `turkish-search.js` / `turkish-utils.js` — Turkish-insensitive search (`ı/i`, `ş/s`, …).
 - `oauth.js`, `assistant-tools.js` — assistant sign-in and MCP tools.
@@ -79,7 +82,8 @@ Key `lib/` modules:
 - Never return password columns: `Admin.password` (bcrypt hash) and `Customer.password` (shown only with `canSeePasswords`).
   Prefer explicit Prisma `select`s. Customer phone/email go to the assistant only with `canViewCustomers`.
 - `/api/cron/check-services` requires `Authorization: Bearer <CRON_SECRET>` when `CRON_SECRET` is set.
-- `/api/integration/*` requires `Authorization: Bearer <MAPOS_INTEGRATION_KEY>` (`lib/integration-auth.js`); without the key it rejects everything.
+- `/api/integration/*` requires `Authorization: Bearer <key>` with one of the per-system keys (`lib/integration-auth.js`);
+  a system whose key is not set is rejected. The key decides which products the caller may create or delete.
 
 ## Domain rules
 
@@ -124,7 +128,7 @@ The editor may flag `url` in the `datasource` block — that warning is from Pri
   ```
 
 - Environment (see `.env.example`): `DATABASE_URL`, `JWT_SECRET` (required — login refuses to work without it),
-  `CRON_SECRET`, `MAPOS_INTEGRATION_KEY`, `APP_URL` (public URL; used by OAuth metadata and assistant token audience), `renewPassword`
+  `CRON_SECRET`, `MAPOS_INTEGRATION_KEY` / `MAMENU_INTEGRATION_KEY` / `POS_PROXY_INTEGRATION_KEY`, `APP_URL` (public URL; used by OAuth metadata and assistant token audience), `renewPassword`
   (only for `/api/external/renew`), optional `MCP_REDIRECT_HOSTS`.
 
 ## AI assistant (MCP)

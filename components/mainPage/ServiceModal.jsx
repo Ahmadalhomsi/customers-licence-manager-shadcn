@@ -20,6 +20,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { BeatLoader } from "react-spinners";
 import { tr } from 'date-fns/locale';
+import { MAMENU_CATEGORY, POS_PROVIDERS } from '@/lib/licence-products';
 
 
 const PAYMENT_TYPES = [
@@ -42,6 +43,8 @@ const SERVICE_CATEGORIES = [
   { value: "Migros Yemek", label: "Migros Yemek", color: "text-orange-600" },
   { value: "Trendyol Yemek", label: "Trendyol Yemek", color: "text-orange-600" },
   { value: "Getir Yemek", label: "Getir Yemek", color: "text-yellow-600" },
+  { value: MAMENU_CATEGORY, label: MAMENU_CATEGORY, color: "text-lime-600" },
+  ...POS_PROVIDERS.map((provider) => ({ value: provider.category, label: provider.category, color: "text-slate-600" })),
 ];
 
 const CURRENCIES = [
