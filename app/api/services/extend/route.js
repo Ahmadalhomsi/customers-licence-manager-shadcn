@@ -5,6 +5,7 @@ import { extendServices, LicenceError } from '@/lib/licences';
 /**
  * Bulk-extends licences: moves each service's endingDate forward by the chosen period,
  * or to a chosen date when period is 'custom' (body: { period: 'custom', endingDate }).
+ * base: 'end' (default) adds the period to the current end date, 'start' to the licence's start date.
  * See extendServices in lib/licences.js for the rules.
  */
 export async function POST(req) {
@@ -21,6 +22,7 @@ export async function POST(req) {
             serviceIds: data?.serviceIds,
             period: data?.period || '1year',
             endingDate: data?.endingDate,
+            base: data?.base || 'end',
         });
 
         return NextResponse.json({
