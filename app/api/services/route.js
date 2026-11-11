@@ -2,7 +2,6 @@ import { verifyJWT } from '@/lib/jwt';
 import prisma from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { findIdsByTurkishSearch } from '@/lib/turkish-search';
-import { findTrialServiceIds } from '@/lib/dashboard';
 
 const UNLIMITED_END_DATE = new Date('9999-12-31T00:00:00.000Z');
 
@@ -164,9 +163,9 @@ export async function GET(req) {
             andConditions.push({ category: categoryFilter });
         }
 
-        // "Sadece deneme": only trial licences
+        // "Sadece deneme": only licences of the shared "Trial Customer"
         if (searchParams.get('trial') === 'true') {
-            andConditions.push({ id: { in: await findTrialServiceIds() } });
+            andConditions.push({ customer: { name: 'Trial Customer' } });
         }
 
         // Add customer filtering if provided
