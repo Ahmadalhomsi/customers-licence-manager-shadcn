@@ -57,6 +57,7 @@ export default function ServicesPage() {
   // Add additional filter states
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [trialOnly, setTrialOnly] = useState(false);
   const [dateRangeFilter, setDateRangeFilter] = useState();
   const [endDateRangeFilter, setEndDateRangeFilter] = useState();
   const [lastLoginDateRangeFilter, setLastLoginDateRangeFilter] = useState();
@@ -88,7 +89,7 @@ export default function ServicesPage() {
   useEffect(() => {
     handleFilterChange();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, categoryFilter, dateRangeFilter, endDateRangeFilter, lastLoginDateRangeFilter]);
+  }, [statusFilter, categoryFilter, trialOnly, dateRangeFilter, endDateRangeFilter, lastLoginDateRangeFilter]);
 
   const fetchAdminData = async () => {
     try {
@@ -126,6 +127,10 @@ export default function ServicesPage() {
       // Add category filter if not 'all'
       if (categoryFilter !== 'all') {
         params.append('category', categoryFilter);
+      }
+
+      if (trialOnly) {
+        params.append('trial', 'true');
       }
 
       // Add date filters if set
@@ -173,7 +178,7 @@ export default function ServicesPage() {
         toast.error('Yasak: Hizmet görüntüleme izniniz yok')
     }
     setLoading(false)
-  }, [sortBy, sortOrder, pageSize, statusFilter, categoryFilter, dateRangeFilter, endDateRangeFilter, lastLoginDateRangeFilter])
+  }, [sortBy, sortOrder, pageSize, statusFilter, categoryFilter, trialOnly, dateRangeFilter, endDateRangeFilter, lastLoginDateRangeFilter])
 
   // Enhanced search handlers - now server-side with button/enter trigger
   const handleSearch = useCallback(() => {
@@ -499,6 +504,7 @@ export default function ServicesPage() {
   const handleClearFilters = () => {
     setStatusFilter('all');
     setCategoryFilter('all');
+    setTrialOnly(false);
     setDateRangeFilter(undefined);
     setEndDateRangeFilter(undefined);
     setLastLoginDateRangeFilter(undefined);
@@ -639,6 +645,8 @@ export default function ServicesPage() {
           onStatusChange={setStatusFilter}
           categoryFilter={categoryFilter}
           onCategoryChange={setCategoryFilter}
+          trialOnly={trialOnly}
+          onTrialOnlyChange={setTrialOnly}
           availableCategories={availableCategories}
           dateRangeFilter={dateRangeFilter}
           onDateRangeChange={setDateRangeFilter}
@@ -673,7 +681,7 @@ export default function ServicesPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-4">
             <div className="flex items-center gap-4">
               <div className="text-sm text-muted-foreground">
-                {statusFilter !== 'all' || categoryFilter !== 'all' || dateRangeFilter?.from || endDateRangeFilter?.from || lastLoginDateRangeFilter?.from ? (
+                {statusFilter !== 'all' || categoryFilter !== 'all' || trialOnly || dateRangeFilter?.from || endDateRangeFilter?.from || lastLoginDateRangeFilter?.from ? (
                   `${services.length} / ${pagination.total} kayıt gösteriliyor`
                 ) : (
                   `Toplam ${pagination.total} kayıt, sayfa ${pagination.page} / ${pagination.totalPages}`

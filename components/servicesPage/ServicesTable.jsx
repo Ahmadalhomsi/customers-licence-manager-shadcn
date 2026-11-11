@@ -99,6 +99,8 @@ export function ServiceTable({
     onStatusChange,
     categoryFilter,
     onCategoryChange,
+    trialOnly = false,
+    onTrialOnlyChange,
     dateRangeFilter,
     onDateRangeChange,
     endDateRangeFilter,
@@ -363,6 +365,17 @@ export function ServiceTable({
                         </SelectContent>
                     </Select>
 
+                    {onTrialOnlyChange && (
+                        <label htmlFor="trial-only" className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                            <Checkbox
+                                id="trial-only"
+                                checked={trialOnly}
+                                onCheckedChange={(checked) => onTrialOnlyChange(checked === true)}
+                            />
+                            Sadece deneme
+                        </label>
+                    )}
+
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button
@@ -475,7 +488,7 @@ export function ServiceTable({
                     </Popover>
 
                     {/* Clear Filters Button */}
-                    {(statusFilter !== 'all' || categoryFilter !== 'all' || dateRangeFilter?.from || endDateRangeFilter?.from || lastLoginDateRangeFilter?.from) && (
+                    {(statusFilter !== 'all' || categoryFilter !== 'all' || trialOnly || dateRangeFilter?.from || endDateRangeFilter?.from || lastLoginDateRangeFilter?.from) && (
                       <Button 
                         variant="outline" 
                         onClick={onClearFilters}
