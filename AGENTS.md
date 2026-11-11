@@ -51,6 +51,8 @@ Key `lib/` modules:
 - `admin.js` — `ADMIN_SELECT` (admin fields without the password hash), `pickPermissions`.
 - `dashboard.js` — monthly figures (`getDashboard`), Istanbul month helpers, `isTrial`, `customerKey`.
 - `licences.js` — `extendServices`, `makeServicesUnlimited`, `remainingDays`, `istanbulDate`, `UNLIMITED_END_DATE`.
+- `licence-extend.js` — client-safe extend date math (`newEndDateFor`, `addMonthsIstanbul`, `EXTEND_PERIODS`): bulk extend counts
+  from the end date, or from the start date (the end moves to the next start anniversary). Used by the modal preview and the server.
 - `licence-products.js` — product lines and which ones count one licence per customer; `MAMENU_CATEGORY` and `POS_PROVIDERS`
   (the POS proxy saves the provider, e.g. `Beko POS`, as the category). The service forms and tables read these lists.
 - `integration-licences.js` — `createIntegrationLicence` / `deleteIntegrationLicence`: 1-year licences created by connected systems
