@@ -26,12 +26,7 @@ import { cn } from "@/lib/utils";
 import axios from 'axios';
 import { toast } from 'sonner';
 
-// Must match EXTEND_PERIODS / EXTEND_BASES in lib/licences.js
-const BASES = [
-    { value: "end", label: "Bitiş tarihinden" },
-    { value: "start", label: "Başlangıç tarihinden" },
-];
-
+// Must match EXTEND_PERIODS in app/api/services/extend/route.js
 const PERIODS = [
     { value: "1month", label: "1 Ay", months: 1 },
     { value: "6months", label: "6 Ay", months: 6 },
@@ -45,7 +40,6 @@ const formatDate = (date) => format(new Date(date), "dd MMMM yyyy", { locale: tr
 
 export function BulkExtendModal({ visible, onClose, selectedServices = [], onSuccess }) {
     const [period, setPeriod] = useState("1year");
-    const [base, setBase] = useState("end");
     const [customEndDate, setCustomEndDate] = useState(null);
     const [calendarOpen, setCalendarOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -53,34 +47,25 @@ export function BulkExtendModal({ visible, onClose, selectedServices = [], onSuc
     useEffect(() => {
         if (visible) {
             setPeriod("1year");
-            setBase("end");
             setCustomEndDate(null);
         }
     }, [visible]);
 
     const isCustom = period === "custom";
-    const fromStart = !isCustom && base === "start";
     const months = PERIODS.find((p) => p.value === period)?.months ?? 12;
     const limited = selectedServices.filter((s) => s.paymentType !== 'unlimited');
     const unlimitedCount = selectedServices.length - limited.length;
-    const waitingForDate = isCustom && !customEndDate;
 
-    // New end date for a service, or null when it would not move forward (skipped).
-    // Same rules as extendServices in lib/licences.js.
+    // New end date for a service, or null when it would not move forward (skipped)
     const getNewEndDate = (service) => {
         const currentEnd = new Date(service.endingDate);
-        let newEnd;
-        if (isCustom) {
-            newEnd = customEndDate;
-        } else {
-            const from = new Date(fromStart ? service.startingDate : service.endingDate);
-            newEnd = Number.isNaN(from.getTime()) ? null : addMonths(from, months);
-        }
-        return newEnd && newEnd > currentEnd ? newEnd : null;
+        if (!isCustom) return addMonths(currentEnd, months);
+        if (!customEndDate) return null;
+        return currentEnd < customEndDate ? customEndDate : null;
     };
 
     const extendable = limited.filter((s) => getNewEndDate(s));
-    const notLaterCount = waitingForDate ? 0 : limited.length - extendable.length;
+    const notLaterCount = isCustom && customEndDate ? limited.length - extendable.length : 0;
 
     const handleSubmit = async () => {
         if (extendable.length === 0) return;
@@ -90,7 +75,7 @@ export function BulkExtendModal({ visible, onClose, selectedServices = [], onSuc
             const response = await axios.post('/api/services/extend', {
                 serviceIds: extendable.map((s) => s.id),
                 period,
-                ...(isCustom ? { endingDate: customEndDate.toISOString() } : { base }),
+                ...(isCustom && { endingDate: customEndDate.toISOString() }),
             });
             toast.success(`${response.data.extendedCount} hizmet uzatıldı`);
             onSuccess?.();
@@ -130,21 +115,6 @@ export function BulkExtendModal({ visible, onClose, selectedServices = [], onSuc
                                 </SelectContent>
                             </Select>
 
-                            {!isCustom && (
-                                <Select value={base} onValueChange={setBase}>
-                                    <SelectTrigger className="w-56">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {BASES.map((b) => (
-                                            <SelectItem key={b.value} value={b.value}>
-                                                {b.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-
                             {isCustom && (
                                 <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                                     <PopoverTrigger asChild>
@@ -180,11 +150,6 @@ export function BulkExtendModal({ visible, onClose, selectedServices = [], onSuc
                                 Seçilen tarih tüm seçili hizmetlerin yeni bitiş tarihi olur.
                             </p>
                         )}
-                        {fromStart && (
-                            <p className="text-xs text-muted-foreground">
-                                Yeni bitiş tarihi = hizmetin başlangıç tarihi + seçilen süre.
-                            </p>
-                        )}
                     </div>
 
                     {unlimitedCount > 0 && (
@@ -194,7 +159,7 @@ export function BulkExtendModal({ visible, onClose, selectedServices = [], onSuc
                     )}
                     {notLaterCount > 0 && (
                         <p className="text-sm text-amber-600">
-                            {notLaterCount} hizmetin yeni bitiş tarihi mevcut bitiş tarihinden sonra olmadığı için atlanacak.
+                            {notLaterCount} hizmetin bitiş tarihi zaten seçilen tarihten sonra, atlanacak.
                         </p>
                     )}
 
@@ -206,18 +171,13 @@ export function BulkExtendModal({ visible, onClose, selectedServices = [], onSuc
                                     key={service.id}
                                     className={cn(
                                         "flex flex-wrap items-center justify-between gap-2 p-2 text-sm",
-                                        !waitingForDate && !newEndDate && "opacity-50"
+                                        isCustom && customEndDate && !newEndDate && "opacity-50"
                                     )}
                                 >
                                     <div className="min-w-0">
                                         <div className="font-medium truncate">{service.name}</div>
                                         {service.customer?.name && (
                                             <div className="text-muted-foreground truncate">{service.customer.name}</div>
-                                        )}
-                                        {fromStart && service.startingDate && (
-                                            <div className="text-xs text-muted-foreground">
-                                                Başlangıç: {formatDate(service.startingDate)}
-                                            </div>
                                         )}
                                     </div>
                                     <div className="text-right whitespace-nowrap">
@@ -227,7 +187,7 @@ export function BulkExtendModal({ visible, onClose, selectedServices = [], onSuc
                                             <span className="font-medium text-green-600">{formatDate(newEndDate)}</span>
                                         ) : (
                                             <span className="text-muted-foreground">
-                                                {waitingForDate ? "—" : "Atlanacak"}
+                                                {isCustom && !customEndDate ? "—" : "Atlanacak"}
                                             </span>
                                         )}
                                     </div>
