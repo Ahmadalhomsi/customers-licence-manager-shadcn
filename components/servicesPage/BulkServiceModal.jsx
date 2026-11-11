@@ -103,6 +103,21 @@ const SERVICE_CATEGORIES = {
     description: 'Getir Yemek entegrasyonu',
     color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
     noUnlimited: true
+  },
+  'Signage Entegrasyonu': {
+    name: 'Signage Entegrasyonu',
+    description: 'Signage entegrasyonu',
+    color: 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300'
+  },
+  'Harici API': {
+    name: 'Harici API',
+    description: 'Harici API erişimi',
+    color: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300'
+  },
+  'Hızır Paket': {
+    name: 'Hızır Paket',
+    description: 'Hızır paket hizmeti',
+    color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
   }
 }
 

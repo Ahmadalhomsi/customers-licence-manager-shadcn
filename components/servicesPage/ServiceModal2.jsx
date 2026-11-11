@@ -65,6 +65,9 @@ const SERVICE_CATEGORIES = [
     { value: "Migros Yemek", label: "Migros Yemek", color: "text-orange-600" },
     { value: "Trendyol Yemek", label: "Trendyol Yemek", color: "text-orange-600" },
     { value: "Getir Yemek", label: "Getir Yemek", color: "text-yellow-600" },
+    { value: "Signage Entegrasyonu", label: "Signage Entegrasyonu", color: "text-sky-600" },
+    { value: "Harici API", label: "Harici API", color: "text-rose-600" },
+    { value: "Hızır Paket", label: "Hızır Paket", color: "text-amber-600" },
     { value: MAMENU_CATEGORY, label: MAMENU_CATEGORY, color: "text-lime-600" },
     ...POS_PROVIDERS.map((provider) => ({ value: provider.category, label: provider.category, color: "text-slate-600" })),
 ];

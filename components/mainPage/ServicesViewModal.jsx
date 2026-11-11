@@ -33,6 +33,9 @@ const PAYMENT_TYPES = [
         'Migros Yemek': 'bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400',
         'Trendyol Yemek': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
         'Getir Yemek': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+        'Signage Entegrasyonu': 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300',
+        'Harici API': 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
+        'Hızır Paket': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
         [MAMENU_CATEGORY]: 'bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-300',
         ...Object.fromEntries(POS_PROVIDERS.map((provider) => [provider.category, 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300']))
     };
