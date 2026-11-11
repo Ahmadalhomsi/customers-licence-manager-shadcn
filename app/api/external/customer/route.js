@@ -211,7 +211,7 @@ async function createTrialService(deviceToken, deviceTokenV2, serviceName, compa
     const service = await prisma.service.create({
         data: {
             name: serviceName,
-            description: `Trial service - 15 days from ${startingDate.toDateString()}`,
+            description: terminal || null, // Device name
             companyName: companyName || null,
             category: "Adisyon Programı",
             paymentType: 'custom',

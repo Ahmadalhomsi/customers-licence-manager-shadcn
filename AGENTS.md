@@ -97,7 +97,8 @@ Key `lib/` modules:
 - **Customers are matched by phone number** (`normalizePhone`), falling back to the customer id. Phones are free text in the DB.
 - **Trials** are created automatically by `/api/external/validation(v2)` and `/api/external/customer`: customer
   `Trial Customer`, or `paymentType: 'custom'` + description starting with `Trial service`. Converting a trial changes
-  `paymentType` but keeps the description. Use `isTrial()` from `lib/dashboard.js`.
+  `paymentType` but keeps the description. Use `isTrial()` from `lib/dashboard.js`. New trials get the terminal name as their
+  description, so they are recognised by the `Trial Customer` customer; the description check only covers older trials.
 - **Unlimited** licences: `paymentType: 'unlimited'` **and** `endingDate = 9999-12-31T00:00:00Z` (`UNLIMITED_END_DATE`).
   They never expire and are skipped by extends, reminders and expiry counts.
 - **Renewals**: moving an end date forward writes a `RenewHistory` row (`services/[id]` PUT, bulk extend, external renew,
